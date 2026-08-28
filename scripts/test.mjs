@@ -52,7 +52,7 @@ await build({
   bundle: true,
   platform: 'node',
   format: 'esm',
-  target: 'node20.18',
+  target: 'node24.18',
   sourcemap: 'inline',
   outExtension: { '.js': '.mjs' },
   logLevel: 'warning',

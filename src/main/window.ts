@@ -14,7 +14,7 @@ import path from 'node:path';
 import type { WindowState } from '../shared/contracts.js';
 import { APP_INDEX_URL } from './security/app-protocol.js';
 import { applyWindowHardening } from './security/window-hardening.js';
-import { bindEventTarget, emit } from './ipc/event-bus.js';
+import { bindEventTarget, emit, unbindEventTarget } from './ipc/event-bus.js';
 
 const MIN_WIDTH = 940;
 const MIN_HEIGHT = 620;
@@ -102,6 +102,9 @@ export function createMainWindow(): BrowserWindow {
   window.on('blur', pushState);
 
   window.on('closed', () => {
+    // Desatar el bus aqui evita que el apagado ordenado intente emitir
+    // eventos hacia una ventana ya destruida.
+    unbindEventTarget();
     mainWindow = null;
   });
 

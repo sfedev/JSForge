@@ -33,10 +33,10 @@ const DEV = WATCH || argv.has('--dev');
 
 const pkg = JSON.parse(await readFile(path.join(ROOT, 'package.json'), 'utf8'));
 
-/** Node que embarca Electron 33. Evita transpilar de mas. */
-const NODE_TARGET = 'node20.18';
-/** Chromium que embarca Electron 33. */
-const BROWSER_TARGET = 'chrome130';
+/** Node que embarca Electron 44. Evita transpilar de mas. */
+const NODE_TARGET = 'node24.18';
+/** Chromium que embarca Electron 44. */
+const BROWSER_TARGET = 'chrome152';
 
 const define = {
   'process.env.NODE_ENV': JSON.stringify(DEV ? 'development' : 'production'),

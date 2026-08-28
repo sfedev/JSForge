@@ -7,11 +7,11 @@
  * vector para exponer canales arbitrarios.
  */
 
-import type { BrowserWindow, WebContents } from 'electron';
+import type { BrowserWindow } from 'electron';
 
 import { IPC_EVENT_CHANNEL, type ForgeEvent } from '../../shared/contracts.js';
 
-type Target = { readonly webContents: WebContents } | null;
+type Target = BrowserWindow | null;
 
 let target: Target = null;
 
@@ -24,20 +24,32 @@ export function unbindEventTarget(): void {
   target = null;
 }
 
-/** Envia un evento tipado al renderer. No lanza si la ventana ya no existe. */
+/**
+ * Envia un evento tipado al renderer. Nunca lanza.
+ *
+ * Ojo con el orden: leer `window.webContents` de una `BrowserWindow` ya
+ * destruida lanza `TypeError: Object has been destroyed`, asi que ese acceso
+ * tiene que ocurrir DENTRO del try. Es justo lo que pasa al cerrar la
+ * aplicacion, cuando el apagado ordenado todavia emite eventos.
+ */
 export function emit(event: ForgeEvent): void {
   const current = target;
   if (current === null) {
     return;
   }
-  const contents = current.webContents;
-  if (contents.isDestroyed()) {
-    return;
-  }
   try {
+    if (current.isDestroyed()) {
+      target = null;
+      return;
+    }
+    const contents = current.webContents;
+    if (contents.isDestroyed()) {
+      return;
+    }
     contents.send(IPC_EVENT_CHANNEL, event);
   } catch {
-    // La ventana pudo cerrarse entre la comprobacion y el envio.
+    // La ventana pudo destruirse entre la comprobacion y el envio.
+    target = null;
   }
 }
 

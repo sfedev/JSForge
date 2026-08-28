@@ -43,9 +43,9 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
-    "electron": "^33.3.1",
-    "electron-builder": "^25.1.8",
-    "esbuild": "^0.24.2",
+    "electron": "^44.0.0",
+    "electron-builder": "^26.15.3",
+    "esbuild": "^0.28.2",
     "typescript": "^5.7.2"
   },
   "build": {
@@ -83,11 +83,11 @@
       "category": "Development"
     }
   },
-  "allowScripts": {
-    "electron@33.4.11": true,
-    "esbuild@0.24.2": true
-  },
   "bin": {
     "forge": "dist/cli/forge.mjs"
+  },
+  "allowScripts": {
+    "electron@44.0.0": true,
+    "esbuild@0.28.2": true
   }
 }

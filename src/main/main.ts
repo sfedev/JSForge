@@ -121,6 +121,8 @@ function shutdown(): void {
     return;
   }
   shuttingDown = true;
+  // Primero se corta la salida de eventos; despues se cierran los servicios.
+  unbindEventTarget();
   try {
     disposeAllProcesses();
     void stopAllServers();
@@ -132,6 +134,5 @@ function shutdown(): void {
   } catch (cause) {
     console.error('[forge] fallo al cerrar el workspace', cause);
   }
-  unbindEventTarget();
   disposeAll();
 }
