@@ -39,7 +39,7 @@
     "typescript": "^5.7.2",
     "vscode-langservers-extracted": "^4.10.0",
     "@vue/language-server": "^2.2.0",
-    "tailwindcss-language-server": "^0.14.8"
+    "@tailwindcss/language-server": "^0.16.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
