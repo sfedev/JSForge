@@ -4,8 +4,11 @@ import {
   IPC,
   ok,
   type DotForgeConfig,
+  type Blueprint,
   type DotForgeManifest,
   type EnvFileView,
+  type GenerateRequest,
+  type GenerateResult,
   type ProcessInfo,
   type ProjectManifest,
   type ScriptEntry,
@@ -17,6 +20,7 @@ import {
   syncManifest,
   writeManifest,
 } from '../../services/dotforge/config-service.js';
+import { generate, listBlueprints } from '../../services/dotforge/generator/index.js';
 import { DOTFORGE_JSON_SCHEMA } from '../../services/dotforge/schema.js';
 import {
   clearProcess,
@@ -48,6 +52,12 @@ export function registerDotForgeHandlers(): void {
   handle<[], DotForgeManifest>(IPC.DOTFORGE_SYNC, async () => ok(await syncManifest()));
 
   handle<[], unknown>(IPC.DOTFORGE_SCHEMA, () => ok(DOTFORGE_JSON_SCHEMA));
+
+  handle<[], readonly Blueprint[]>(IPC.DOTFORGE_BLUEPRINTS, () => ok(listBlueprints()));
+
+  handle<[GenerateRequest], GenerateResult>(IPC.DOTFORGE_GENERATE, async (request) =>
+    ok(await generate(request)),
+  );
 
   handle<[string], readonly ProcessInfo[]>(IPC.DOTFORGE_PIPELINE_RUN, async (pipelineId) =>
     ok(await runPipeline(pipelineId)),
