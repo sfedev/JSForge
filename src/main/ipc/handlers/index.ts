@@ -11,6 +11,7 @@ import { registerDotForgeHandlers } from './dotforge-handlers.js';
 import { registerFsHandlers } from './fs-handlers.js';
 import { registerGitHandlers } from './git-handlers.js';
 import { registerLspHandlers } from './lsp-handlers.js';
+import { registerTerminalHandlers } from './terminal-handlers.js';
 
 export function registerAllHandlers(): void {
   registerCoreHandlers();
@@ -19,4 +20,5 @@ export function registerAllHandlers(): void {
   registerGitHandlers();
   registerLspHandlers();
   registerAiHandlers();
+  registerTerminalHandlers();
 }

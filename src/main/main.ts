@@ -23,6 +23,7 @@ import { closeWorkspace, setChangeThrottle } from './services/workspace-service.
 import { disposeAllProcesses } from './services/process/process-manager.js';
 import { stopAllServers } from './services/lsp/lsp-manager.js';
 import { cancelAllChats } from './services/ai/ai-service.js';
+import { disposeAllSessions } from './services/terminal/pty-service.js';
 import { createMainWindow, getMainWindow } from './window.js';
 
 /** Directorio del bundle del renderer servido por `forge://app`. */
@@ -120,6 +121,7 @@ function shutdown(): void {
     disposeAllProcesses();
     void stopAllServers();
     cancelAllChats();
+    disposeAllSessions();
     closeWorkspace();
   } catch (cause) {
     console.error('[forge] fallo al cerrar el workspace', cause);

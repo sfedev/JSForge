@@ -25,6 +25,7 @@ import { registerSearchView } from './views/search-view.js';
 import { registerPipelinesView } from './views/pipelines-view.js';
 import { registerOutputView } from './views/output-view.js';
 import { registerGitView } from './views/git-view.js';
+import { registerTerminalView } from './views/terminal-view.js';
 import { registerLspBridge } from './lsp/lsp-bridge.js';
 
 async function boot(): Promise<void> {
@@ -50,6 +51,7 @@ async function boot(): Promise<void> {
   registerPipelinesView();
   registerOutputView();
   registerGitView();
+  registerTerminalView();
 
   mountTitleBar(mounts);
   mountActivityBar(mounts);
