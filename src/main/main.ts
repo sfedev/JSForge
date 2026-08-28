@@ -24,6 +24,9 @@ import { disposeAllProcesses } from './services/process/process-manager.js';
 import { stopAllServers } from './services/lsp/lsp-manager.js';
 import { cancelAllChats } from './services/ai/ai-service.js';
 import { disposeAllSessions } from './services/terminal/pty-service.js';
+import { disposeMetrics } from './services/metrics/metrics-service.js';
+import { cancelAllRequests } from './services/http/http-client.js';
+import { initializeUpdater } from './services/updater/updater-service.js';
 import { createMainWindow, getMainWindow } from './window.js';
 
 /** Directorio del bundle del renderer servido por `forge://app`. */
@@ -93,6 +96,7 @@ async function onReady(): Promise<void> {
 
   const settings = getSettings();
   setChangeThrottle(settings.logThrottleMs);
+  initializeUpdater();
 
   /* 5. Ventana. */
   const window = createMainWindow();
@@ -122,6 +126,8 @@ function shutdown(): void {
     void stopAllServers();
     cancelAllChats();
     disposeAllSessions();
+    disposeMetrics();
+    cancelAllRequests();
     closeWorkspace();
   } catch (cause) {
     console.error('[forge] fallo al cerrar el workspace', cause);
