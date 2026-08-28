@@ -22,6 +22,8 @@ import { mountCommandPalette } from './views/command-palette.js';
 import { registerKeybindings } from './core/keybindings.js';
 import { registerExplorerView } from './views/explorer-view.js';
 import { registerSearchView } from './views/search-view.js';
+import { registerPipelinesView } from './views/pipelines-view.js';
+import { registerOutputView } from './views/output-view.js';
 
 async function boot(): Promise<void> {
   const root = query<HTMLElement>('#forge-root');
@@ -43,6 +45,8 @@ async function boot(): Promise<void> {
   // contenedor las instancia de forma perezosa al seleccionarlas.
   registerExplorerView();
   registerSearchView();
+  registerPipelinesView();
+  registerOutputView();
 
   mountTitleBar(mounts);
   mountActivityBar(mounts);
