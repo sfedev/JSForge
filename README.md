@@ -15,7 +15,7 @@ compilación C++ en la máquina del usuario.
 | Área | Qué hace |
 | --- | --- |
 | **Motor DotForge** | `dotforge.config.json` como fuente de verdad de tareas, pipelines, entornos y servicios. Si el proyecto no tiene manifiesto, se infiere uno desde `package.json` y funciona igual. |
-| **Scaffolding** | 12 blueprints (React, Next, Vue, Angular, SvelteKit, Express, NestJS, Fastify, Next fullstack, Turborepo, Nx) con **patron de arquitectura elegible**, por asistente visual o por CLI `--json`. |
+| **Scaffolding** | 11 blueprints (React, Next, Vue, Angular, SvelteKit, Express, NestJS, Fastify, Next fullstack, Turborepo, Nx) con **patron de arquitectura elegible**, por asistente visual o por CLI `--json`. |
 | **IntelliSense** | Cliente LSP propio sobre stdio con framing `Content-Length`: TypeScript, HTML, CSS, JSON, Volar y Tailwind. Autocompletado, hover, ir a definición, referencias, renombrado, acciones de código, pistas en línea y tokens semánticos. |
 | **Pipelines** | Selector de inicio multiproceso con un canal de salida por proceso, puerto detectado, hipervínculo a `localhost` y estado en vivo. |
 | **Registros** | Parser de Pino, Bunyan, Winston, Morgan y DotForge CLI, con trazas de pila clicables y freno de refresco configurable. |
