@@ -137,7 +137,19 @@ export async function generate(request: GenerateRequest): Promise<GenerateResult
     : 'npm';
 
   const target = resolveTarget(request.targetDir);
-  const context = createContext({ ...request, packageManager });
+
+  // Los valores por defecto del blueprint se aplican aqui, no en la interfaz:
+  // asi el asistente visual y la CLI generan exactamente lo mismo cuando el
+  // llamante no especifica una opcion.
+  const defaults: Record<string, string | boolean> = {};
+  for (const option of blueprint.options) {
+    defaults[option.id] = option.default;
+  }
+  const context = createContext({
+    ...request,
+    packageManager,
+    options: { ...defaults, ...(request.options ?? {}) },
+  });
 
   const files = blueprint.build(context);
   assertSafePaths(files, target);

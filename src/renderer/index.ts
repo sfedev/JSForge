@@ -31,6 +31,8 @@ import { registerServicesView } from './views/services-view.js';
 import { registerMetricsView } from './views/metrics-view.js';
 import { registerUpdaterView } from './views/updater-view.js';
 import { registerScaffoldWizard } from './views/scaffold-wizard.js';
+import { registerSettingsView } from './views/settings-view.js';
+import { registerProblemsView } from './views/problems-view.js';
 import { registerLspBridge } from './lsp/lsp-bridge.js';
 
 async function boot(): Promise<void> {
@@ -60,6 +62,7 @@ async function boot(): Promise<void> {
   registerHttpView();
   registerServicesView();
   registerMetricsView();
+  registerProblemsView();
 
   mountTitleBar(mounts);
   mountActivityBar(mounts);
@@ -73,6 +76,7 @@ async function boot(): Promise<void> {
   mountCommandPalette(mounts);
   registerUpdaterView(mounts.overlays);
   registerScaffoldWizard(mounts.overlays);
+  registerSettingsView(mounts.overlays);
   registerKeybindings();
 
   store.patch({ booted: true });

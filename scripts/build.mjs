@@ -105,6 +105,21 @@ const rendererConfig = {
   external: ['electron', 'node:*'],
 };
 
+/**
+ * CLI headless del generador. Comparte el motor con el asistente visual y
+ * no arrastra Electron: se puede ejecutar con Node a secas.
+ */
+const cliConfig = {
+  ...shared,
+  entryPoints: { forge: path.join(SRC, 'cli', 'forge.ts') },
+  outdir: path.join(DIST, 'cli'),
+  platform: 'node',
+  format: 'esm',
+  target: NODE_TARGET,
+  outExtension: { '.js': '.mjs' },
+  banner: { js: '#!/usr/bin/env node' },
+};
+
 /** Workers de Monaco: cada uno es un bundle IIFE clasico. */
 const MONACO_WORKERS = [
   ['editor.worker', 'monaco-editor/esm/vs/editor/editor.worker.js'],
@@ -161,7 +176,7 @@ async function run() {
   }
   await mkdir(DIST, { recursive: true });
 
-  const configs = [mainConfig, preloadConfig, rendererConfig, ...monacoWorkerConfigs()];
+  const configs = [mainConfig, preloadConfig, rendererConfig, cliConfig, ...monacoWorkerConfigs()];
 
   if (WATCH) {
     const contexts = await Promise.all(configs.map((config) => context(config)));
