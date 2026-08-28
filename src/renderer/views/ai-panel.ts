@@ -12,6 +12,7 @@ import { defineCommands, runCommand } from '../core/commands.js';
 import { store, type AiConversationMessage } from '../core/store.js';
 import { toast, toastError } from '../core/toasts.js';
 import { getEditor } from './editor-area.js';
+import { collapseContext, diffLines } from '../core/diff.js';
 import type { ShellMounts } from '../shell.js';
 import type {
   AiContextRequest,
@@ -309,14 +310,14 @@ function renderContextChips(): void {
 /*  Envio y streaming                                                          */
 /* -------------------------------------------------------------------------- */
 
-async function send(prompt: string, preset: AiQuickAction): Promise<void> {
+async function send(prompt: string, preset: AiQuickAction, forcedRequestId?: string): Promise<void> {
   if (store.state.aiBusyRequestId !== null) {
     toast('warn', 'Espera a que termine la respuesta en curso.');
     return;
   }
   const settings = store.state.settings;
   requestCounter += 1;
-  const requestId = `ai-${Date.now()}-${requestCounter}`;
+  const requestId = forcedRequestId ?? `ai-${Date.now()}-${requestCounter}`;
 
   const history = store.state.aiMessages
     .filter((message) => message.error === undefined)
@@ -344,6 +345,12 @@ async function send(prompt: string, preset: AiQuickAction): Promise<void> {
 }
 
 function handleStream(event: AiStreamEvent): void {
+  if (event.kind === 'done' && pendingInlineEdit?.requestId === event.requestId) {
+    const message = store.state.aiMessages.find((entry) => entry.id === event.requestId);
+    const content = event.text !== '' ? event.text : (message?.content ?? '');
+    showInlinePreview(content);
+  }
+
   store.mutate(['aiMessages', 'aiBusyRequestId'], (state) => {
     const message = state.aiMessages.find((entry) => entry.id === event.requestId);
     if (message === undefined) {
@@ -450,6 +457,22 @@ function renderMessage(message: AiConversationMessage): HTMLElement {
 /*  Asistente en linea                                                         */
 /* -------------------------------------------------------------------------- */
 
+interface PendingInlineEdit {
+  readonly requestId: string;
+  readonly original: string;
+  readonly range: MonacoRange;
+}
+
+/** Forma minima del rango de Monaco que necesita la aplicacion del parche. */
+interface MonacoRange {
+  readonly startLineNumber: number;
+  readonly startColumn: number;
+  readonly endLineNumber: number;
+  readonly endColumn: number;
+}
+
+let pendingInlineEdit: PendingInlineEdit | null = null;
+
 async function inlineEdit(): Promise<void> {
   const editor = getEditor();
   const selection = editor?.getSelection();
@@ -466,9 +489,125 @@ async function inlineEdit(): Promise<void> {
   if (instruction === null || instruction.trim() === '') {
     return;
   }
+
+  const requestId = `ai-inline-${Date.now()}`;
+  pendingInlineEdit = {
+    requestId,
+    original: model.getValueInRange(selection),
+    range: {
+      startLineNumber: selection.startLineNumber,
+      startColumn: selection.startColumn,
+      endLineNumber: selection.endLineNumber,
+      endColumn: selection.endColumn,
+    },
+  };
+
   store.patch({ auxVisible: true });
   await send(
     `${instruction.trim()}\n\nDevuelve unicamente el codigo resultante en un bloque, sin explicacion.`,
     'inline-edit',
+    requestId,
   );
+}
+
+/** Extrae el primer bloque de codigo de la respuesta; si no hay, usa todo. */
+function extractCodeBlock(content: string): string {
+  const match = /```[^\n]*\n([\s\S]*?)```/.exec(content);
+  if (match?.[1] !== undefined) {
+    return match[1].replace(/\n$/, '');
+  }
+  return content.trim();
+}
+
+/** Vista previa de diferencias antes de tocar el documento. */
+function showInlinePreview(content: string): void {
+  const pending = pendingInlineEdit;
+  pendingInlineEdit = null;
+  if (pending === null) {
+    return;
+  }
+
+  const proposed = extractCodeBlock(content);
+  if (proposed === '' || proposed === pending.original) {
+    toast('info', 'El asistente no propuso ningun cambio.');
+    return;
+  }
+
+  const summary = diffLines(pending.original, proposed);
+  const body = h('div', {
+    style:
+      'font-family:var(--font-mono);font-size:var(--font-size-sm);white-space:pre;overflow:auto;max-height:52vh;user-select:text',
+  });
+
+  for (const line of collapseContext(summary, 3)) {
+    const prefix = line.kind === 'added' ? '+' : line.kind === 'removed' ? '-' : ' ';
+    const background =
+      line.kind === 'added'
+        ? 'var(--state-success-soft)'
+        : line.kind === 'removed'
+          ? 'var(--state-error-soft)'
+          : 'transparent';
+    body.appendChild(
+      h(
+        'div',
+        { style: `background:${background};padding:0 6px` },
+        `${prefix} ${line.text}`,
+      ),
+    );
+  }
+
+  const apply = h('button', { class: 'btn btn--primary', type: 'button' }, 'Aplicar');
+  const cancel = h('button', { class: 'btn btn--ghost', type: 'button' }, 'Descartar');
+
+  const dialog = h(
+    'div',
+    { class: 'dialog', role: 'dialog', 'aria-label': 'Vista previa del cambio' },
+    h(
+      'div',
+      { class: 'dialog__header' },
+      'Vista previa del cambio',
+      h(
+        'span',
+        { class: 'chip', style: 'margin-left:auto' },
+        `+${summary.added} −${summary.removed}${summary.approximate ? ' (aproximado)' : ''}`,
+      ),
+    ),
+    h('div', { class: 'dialog__body' }, body),
+    h('div', { class: 'dialog__footer' }, cancel, apply),
+  );
+  const overlay = h('div', { class: 'overlay overlay--center' }, dialog);
+  document.querySelector('.overlays')?.appendChild(overlay);
+
+  const close = (): void => overlay.remove();
+  cancel.addEventListener('click', close);
+  overlay.addEventListener('mousedown', (event) => {
+    if (event.target === overlay) {
+      close();
+    }
+  });
+
+  apply.addEventListener('click', () => {
+    const editor = getEditor();
+    const model = editor?.getModel();
+    if (editor === null || model === null || model === undefined) {
+      close();
+      return;
+    }
+    // Se aplica como una sola operacion para que Ctrl+Z la deshaga entera.
+    editor.executeEdits('forge-ai-inline', [
+      {
+        range: {
+          startLineNumber: pending.range.startLineNumber,
+          startColumn: pending.range.startColumn,
+          endLineNumber: pending.range.endLineNumber,
+          endColumn: pending.range.endColumn,
+        },
+        text: proposed,
+        forceMoveMarkers: true,
+      },
+    ]);
+    editor.focus();
+    close();
+    toast('info', 'Cambio aplicado.', 'Ctrl+Z lo deshace por completo.');
+  });
 }

@@ -5,6 +5,7 @@
  * de modo que el renderer nunca encuentre un canal sin manejador.
  */
 
+import { registerAiHandlers } from './ai-handlers.js';
 import { registerCoreHandlers } from './core-handlers.js';
 import { registerDotForgeHandlers } from './dotforge-handlers.js';
 import { registerFsHandlers } from './fs-handlers.js';
@@ -17,4 +18,5 @@ export function registerAllHandlers(): void {
   registerDotForgeHandlers();
   registerGitHandlers();
   registerLspHandlers();
+  registerAiHandlers();
 }
