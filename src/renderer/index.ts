@@ -24,6 +24,7 @@ import { registerExplorerView } from './views/explorer-view.js';
 import { registerSearchView } from './views/search-view.js';
 import { registerPipelinesView } from './views/pipelines-view.js';
 import { registerOutputView } from './views/output-view.js';
+import { registerGitView } from './views/git-view.js';
 
 async function boot(): Promise<void> {
   const root = query<HTMLElement>('#forge-root');
@@ -47,6 +48,7 @@ async function boot(): Promise<void> {
   registerSearchView();
   registerPipelinesView();
   registerOutputView();
+  registerGitView();
 
   mountTitleBar(mounts);
   mountActivityBar(mounts);
