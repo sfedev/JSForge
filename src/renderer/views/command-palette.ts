@@ -142,28 +142,17 @@ export function mountCommandPalette(mounts: ShellMounts): void {
     if (store.state.workspace === null || query.trim() === '') {
       return [];
     }
-    // Se reutiliza la busqueda del main: recorre el arbol respetando los
-    // directorios ignorados y devuelve rutas ya relativas al workspace.
-    const result = await window.forge.fileSystem.search({
-      query: query.trim(),
-      maxResults: 200,
-      regex: false,
-    });
+    // El main recorre el arbol saltando node_modules, dist y demas, y
+    // devuelve rutas ya relativas al workspace.
+    const result = await window.forge.fileSystem.findFiles(query.trim(), 300);
     if (!result.ok) {
       return [];
     }
-    const unique = new Map<string, PaletteEntry>();
-    for (const match of result.value.matches) {
-      if (unique.has(match.path)) {
-        continue;
-      }
-      unique.set(match.path, {
-        label: match.path,
-        hint: 'archivo',
-        run: () => runCommand('editor.openFile', match.path),
-      });
-    }
-    return [...unique.values()];
+    return result.value.map((relativePath) => ({
+      label: relativePath,
+      hint: 'archivo',
+      run: () => runCommand('editor.openFile', relativePath),
+    }));
   }
 
   function render(): void {

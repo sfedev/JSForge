@@ -20,7 +20,7 @@
     "dev": "node scripts/dev.mjs",
     "start": "electron .",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "node --test --experimental-strip-types tests/**/*.test.ts",
+    "test": "node scripts/test.mjs",
     "package": "npm run build && electron-builder --dir",
     "dist": "npm run build && electron-builder"
   },

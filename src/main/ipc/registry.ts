@@ -41,6 +41,16 @@ export function toForgeError(cause: unknown): ForgeError {
   if (cause instanceof WorkspaceGuardError) {
     return cause.forge;
   }
+  // Los servicios etiquetan sus errores de dominio con `.forge` para
+  // conservar el codigo semantico (E_CONFLICT, E_BINARY, E_TOO_LARGE…).
+  if (
+    typeof cause === 'object' &&
+    cause !== null &&
+    'forge' in cause &&
+    typeof (cause as { forge?: unknown }).forge === 'object'
+  ) {
+    return (cause as { forge: ForgeError }).forge;
+  }
   if (cause instanceof Error) {
     const code = (cause as NodeJS.ErrnoException).code;
     switch (code) {

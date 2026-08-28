@@ -92,6 +92,8 @@ export interface ForgeFileSystemApi {
   remove(relativePath: string): Promise<Result<true>>;
   stat(relativePath: string): Promise<Result<FileStat>>;
   search(request: SearchRequest): Promise<Result<SearchResult>>;
+  /** Busca archivos por nombre para el selector rapido. */
+  findFiles(query: string, limit?: number): Promise<Result<readonly string[]>>;
   watchStart(): Promise<Result<true>>;
   watchStop(): Promise<Result<true>>;
 }

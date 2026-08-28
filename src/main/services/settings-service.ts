@@ -98,7 +98,7 @@ export function getSettings(): ForgeSettings {
   }
   let parsed: unknown = null;
   try {
-    const text = readFileSync(settingsPath(), 'utf8').replace(/^﻿/, '');
+    const text = readFileSync(settingsPath(), 'utf8').replace(/^\uFEFF/, '');
     parsed = JSON.parse(text);
   } catch {
     parsed = null;

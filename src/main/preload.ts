@@ -114,6 +114,7 @@ const api: ForgeApi = {
     remove: (relativePath: string) => call(IPC.FS_DELETE, relativePath),
     stat: (relativePath: string) => call(IPC.FS_STAT, relativePath),
     search: (request: SearchRequest) => call(IPC.FS_SEARCH, request),
+    findFiles: (query: string, limit?: number) => call(IPC.FS_FIND_FILES, query, limit ?? 200),
     watchStart: () => call(IPC.FS_WATCH_START),
     watchStop: () => call(IPC.FS_WATCH_STOP),
   },

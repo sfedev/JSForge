@@ -98,6 +98,7 @@ export const IPC = {
   FS_DELETE: 'forge:fs/delete',
   FS_STAT: 'forge:fs/stat',
   FS_SEARCH: 'forge:fs/search',
+  FS_FIND_FILES: 'forge:fs/find-files',
   FS_WATCH_START: 'forge:fs/watch-start',
   FS_WATCH_STOP: 'forge:fs/watch-stop',
 

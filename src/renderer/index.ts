@@ -20,6 +20,8 @@ import { mountAiPanel } from './views/ai-panel.js';
 import { registerCommands, runCommand } from './core/commands.js';
 import { mountCommandPalette } from './views/command-palette.js';
 import { registerKeybindings } from './core/keybindings.js';
+import { registerExplorerView } from './views/explorer-view.js';
+import { registerSearchView } from './views/search-view.js';
 
 async function boot(): Promise<void> {
   const root = query<HTMLElement>('#forge-root');
@@ -36,6 +38,11 @@ async function boot(): Promise<void> {
 
   registerCommands();
   registerEventBridge();
+
+  // Las vistas de la barra lateral se registran antes de montarla; el
+  // contenedor las instancia de forma perezosa al seleccionarlas.
+  registerExplorerView();
+  registerSearchView();
 
   mountTitleBar(mounts);
   mountActivityBar(mounts);
