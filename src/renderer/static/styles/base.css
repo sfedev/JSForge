@@ -1,0 +1,360 @@
+/*
+ * ForgeJS IDE — tokens de diseno y base.
+ *
+ * Paleta "DotForge Purple". Los contrastes de texto sobre fondo cumplen
+ * WCAG AA (>= 4.5:1 para texto normal, >= 3:1 para texto grande y bordes
+ * de foco). El tema se selecciona con `data-theme` en el elemento raiz.
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* --- Superficies --- */
+  --surface-0: #0b0d14; /* fondo de la app */
+  --surface-1: #11141d; /* paneles */
+  --surface-2: #171b26; /* barras, cabeceras */
+  --surface-3: #1e2331; /* elementos elevados, hover */
+  --surface-4: #272d3e; /* seleccion, activo */
+  --surface-overlay: rgb(4 5 9 / 62%);
+
+  /* --- Texto --- */
+  --text-strong: #f2f4fb; /* 15.8:1 sobre surface-0 */
+  --text-normal: #c8cee2; /* 10.1:1 */
+  --text-muted: #8e97b3; /*  5.4:1 */
+  --text-subtle: #6b7490; /*  3.4:1 — solo texto grande e iconos */
+  --text-inverse: #0b0d14;
+
+  /* --- Acento DotForge --- */
+  --accent-100: #ded5ff;
+  --accent-200: #c3b2ff;
+  --accent-300: #a88cff;
+  --accent-400: #8f6bff;
+  --accent-500: #7c4dff; /* color de marca */
+  --accent-600: #6a35f0;
+  --accent-700: #5626c9;
+  --accent-soft: rgb(124 77 255 / 16%);
+  --accent-ring: rgb(168 140 255 / 55%);
+
+  /* --- Estados semanticos --- */
+  --state-info: #58a6ff;
+  --state-success: #3fb950;
+  --state-warning: #d9a441;
+  --state-error: #ff6b6b;
+  --state-info-soft: rgb(88 166 255 / 14%);
+  --state-success-soft: rgb(63 185 80 / 14%);
+  --state-warning-soft: rgb(217 164 65 / 16%);
+  --state-error-soft: rgb(255 107 107 / 14%);
+
+  /* --- Git --- */
+  --git-added: #3fb950;
+  --git-modified: #d9a441;
+  --git-deleted: #ff6b6b;
+  --git-renamed: #58a6ff;
+  --git-untracked: #8e97b3;
+  --git-conflict: #ff8f3f;
+
+  /* --- Bordes y sombras --- */
+  --border-subtle: #232838;
+  --border-normal: #303752;
+  --border-strong: #414a6b;
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 40%);
+  --shadow-2: 0 6px 20px rgb(0 0 0 / 45%);
+  --shadow-3: 0 18px 48px rgb(0 0 0 / 55%);
+
+  /* --- Tipografia --- */
+  --font-ui:
+    'Inter', 'Segoe UI Variable Text', 'Segoe UI', -apple-system, BlinkMacSystemFont,
+    'Helvetica Neue', sans-serif;
+  --font-mono:
+    'JetBrains Mono', 'Cascadia Code', 'Fira Code', 'SF Mono', Consolas, 'Liberation Mono',
+    monospace;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-md: 13px;
+  --font-size-lg: 15px;
+  --font-size-xl: 19px;
+  --line-tight: 1.25;
+  --line-normal: 1.5;
+
+  /* --- Espaciado (escala de 4) --- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  /* --- Geometria --- */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-full: 999px;
+
+  /* --- Cromo del IDE --- */
+  --titlebar-height: 34px;
+  --activitybar-width: 48px;
+  --statusbar-height: 24px;
+  --sidebar-width: 280px;
+  --panel-height: 260px;
+  --aux-width: 380px;
+
+  /* --- Movimiento --- */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 90ms;
+  --duration-normal: 160ms;
+}
+
+:root[data-theme='forge-light'] {
+  color-scheme: light;
+
+  --surface-0: #f7f8fc;
+  --surface-1: #ffffff;
+  --surface-2: #f0f2f8;
+  --surface-3: #e6e9f3;
+  --surface-4: #d9deed;
+  --surface-overlay: rgb(20 22 32 / 38%);
+
+  --text-strong: #12141c; /* 16.3:1 sobre surface-0 */
+  --text-normal: #2c3040; /* 11.2:1 */
+  --text-muted: #565d75; /*  5.9:1 */
+  --text-subtle: #757d95; /*  3.6:1 */
+  --text-inverse: #ffffff;
+
+  --accent-500: #6a35f0;
+  --accent-600: #5626c9;
+  --accent-700: #4419a6;
+  --accent-soft: rgb(106 53 240 / 12%);
+  --accent-ring: rgb(106 53 240 / 45%);
+
+  --state-info: #0b62d6;
+  --state-success: #1a7f37;
+  --state-warning: #9a6700;
+  --state-error: #cf222e;
+
+  --git-added: #1a7f37;
+  --git-modified: #9a6700;
+  --git-deleted: #cf222e;
+  --git-renamed: #0b62d6;
+  --git-untracked: #565d75;
+  --git-conflict: #bc4c00;
+
+  --border-subtle: #e2e5ef;
+  --border-normal: #ccd2e2;
+  --border-strong: #adb5cc;
+  --shadow-1: 0 1px 2px rgb(20 22 32 / 10%);
+  --shadow-2: 0 6px 20px rgb(20 22 32 / 12%);
+  --shadow-3: 0 18px 48px rgb(20 22 32 / 18%);
+}
+
+:root[data-theme='forge-high-contrast'] {
+  color-scheme: dark;
+
+  --surface-0: #000000;
+  --surface-1: #000000;
+  --surface-2: #0a0a0a;
+  --surface-3: #161616;
+  --surface-4: #242424;
+
+  --text-strong: #ffffff;
+  --text-normal: #f2f2f2;
+  --text-muted: #d0d0d0;
+  --text-subtle: #b0b0b0;
+
+  --accent-500: #b98cff;
+  --accent-600: #a273ff;
+  --accent-soft: rgb(185 140 255 / 24%);
+  --accent-ring: #ffffff;
+
+  --state-info: #7cc4ff;
+  --state-success: #6ee787;
+  --state-warning: #ffd866;
+  --state-error: #ff9a9a;
+
+  --border-subtle: #6e7681;
+  --border-normal: #8b949e;
+  --border-strong: #ffffff;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Reinicio                                                                   */
+/* -------------------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  background: var(--surface-0);
+  color: var(--text-normal);
+  font-family: var(--font-ui);
+  font-size: var(--font-size-md);
+  line-height: var(--line-normal);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  /* El shell gestiona su propio arrastre de ventana. */
+  user-select: none;
+  cursor: default;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+ul,
+ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+p,
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+}
+
+code,
+kbd,
+pre {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Foco visible y accesibilidad                                               */
+/* -------------------------------------------------------------------------- */
+
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 1px;
+  border-radius: var(--radius-sm);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Barras de desplazamiento                                                   */
+/* -------------------------------------------------------------------------- */
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-normal);
+  border: 2px solid transparent;
+  background-clip: content-box;
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Pantalla de arranque                                                       */
+/* -------------------------------------------------------------------------- */
+
+.forge-root {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.boot-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  color: var(--accent-300);
+}
+
+.boot-mark {
+  animation: boot-pulse 1.6s var(--ease-out) infinite;
+}
+
+.boot-title {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: var(--text-strong);
+  letter-spacing: -0.01em;
+}
+
+.boot-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+@keyframes boot-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: translateY(0);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+.forge-root:not([data-booting='true']) .boot-screen {
+  display: none;
+}

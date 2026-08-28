@@ -1,0 +1,344 @@
+/*
+ * Rejilla del shell del IDE.
+ *
+ *  ┌──────────────────────────────────────────────────────────┐
+ *  │ titlebar                                                 │
+ *  ├────┬───────────────┬──────────────────────────┬──────────┤
+ *  │ act│ sidebar       │ editor                   │ aux      │
+ *  │ ivi│               ├──────────────────────────┤ (IA)     │
+ *  │ ty │               │ panel (salida/terminal)  │          │
+ *  ├────┴───────────────┴──────────────────────────┴──────────┤
+ *  │ statusbar                                                │
+ *  └──────────────────────────────────────────────────────────┘
+ */
+
+.shell {
+  display: grid;
+  grid-template-rows: var(--titlebar-height) minmax(0, 1fr) var(--statusbar-height);
+  height: 100vh;
+  min-height: 0;
+  background: var(--surface-0);
+}
+
+.shell__body {
+  display: grid;
+  grid-template-columns:
+    var(--activitybar-width)
+    var(--sidebar-width)
+    minmax(240px, 1fr)
+    var(--aux-width);
+  min-height: 0;
+  min-width: 0;
+}
+
+.shell[data-sidebar='hidden'] .shell__body {
+  grid-template-columns: var(--activitybar-width) 0 minmax(240px, 1fr) var(--aux-width);
+}
+
+.shell[data-aux='hidden'] .shell__body {
+  grid-template-columns: var(--activitybar-width) var(--sidebar-width) minmax(240px, 1fr) 0;
+}
+
+.shell[data-sidebar='hidden'][data-aux='hidden'] .shell__body {
+  grid-template-columns: var(--activitybar-width) 0 minmax(240px, 1fr) 0;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Barra de titulo                                                            */
+/* -------------------------------------------------------------------------- */
+
+.titlebar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding-inline: var(--space-3);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border-subtle);
+  -webkit-app-region: drag;
+}
+
+.titlebar__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--accent-300);
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.titlebar__menu {
+  display: flex;
+  gap: var(--space-1);
+  -webkit-app-region: no-drag;
+}
+
+.titlebar__title {
+  flex: 1;
+  text-align: center;
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.titlebar__actions {
+  display: flex;
+  gap: var(--space-1);
+  -webkit-app-region: no-drag;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Barra de actividad                                                         */
+/* -------------------------------------------------------------------------- */
+
+.activitybar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding-block: var(--space-2);
+  background: var(--surface-2);
+  border-right: 1px solid var(--border-subtle);
+}
+
+.activitybar__spacer {
+  flex: 1;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Barra lateral                                                              */
+/* -------------------------------------------------------------------------- */
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--surface-1);
+  border-right: 1px solid var(--border-subtle);
+  overflow: hidden;
+}
+
+.sidebar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  height: 32px;
+  padding-inline: var(--space-3);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-subtle);
+  flex: 0 0 auto;
+}
+
+.sidebar__content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Zona central: editor + panel                                               */
+/* -------------------------------------------------------------------------- */
+
+.center {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-width: 0;
+  min-height: 0;
+  background: var(--surface-0);
+}
+
+.center[data-panel='hidden'] {
+  grid-template-rows: minmax(0, 1fr) 0;
+}
+
+.editor-area {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+.editor-area__tabs {
+  display: flex;
+  align-items: stretch;
+  height: 34px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border-subtle);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  flex: 0 0 auto;
+}
+
+.editor-area__tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.editor-area__surface {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
+.editor-area__monaco {
+  position: absolute;
+  inset: 0;
+}
+
+.editor-area__empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  color: var(--text-subtle);
+  text-align: center;
+  padding: var(--space-6);
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Panel inferior                                                             */
+/* -------------------------------------------------------------------------- */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  height: var(--panel-height);
+  min-height: 0;
+  background: var(--surface-1);
+  border-top: 1px solid var(--border-subtle);
+  overflow: hidden;
+}
+
+.center[data-panel='hidden'] .panel {
+  display: none;
+}
+
+.panel__resizer {
+  height: 4px;
+  margin-top: -4px;
+  cursor: ns-resize;
+  background: transparent;
+  transition: background var(--duration-fast) var(--ease-out);
+}
+
+.panel__resizer:hover,
+.panel__resizer[data-dragging='true'] {
+  background: var(--accent-500);
+}
+
+.panel__tabs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 32px;
+  padding-inline: var(--space-2);
+  border-bottom: 1px solid var(--border-subtle);
+  flex: 0 0 auto;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.panel__tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.panel__spacer {
+  flex: 1;
+}
+
+.panel__content {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+.panel__view {
+  position: absolute;
+  inset: 0;
+  display: none;
+  min-height: 0;
+}
+
+.panel__view[data-active='true'] {
+  display: flex;
+  flex-direction: column;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Panel auxiliar (Forge AI)                                                  */
+/* -------------------------------------------------------------------------- */
+
+.aux {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--surface-1);
+  border-left: 1px solid var(--border-subtle);
+  overflow: hidden;
+}
+
+.shell[data-aux='hidden'] .aux {
+  display: none;
+}
+
+.shell[data-sidebar='hidden'] .sidebar {
+  display: none;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Barra de estado                                                            */
+/* -------------------------------------------------------------------------- */
+
+.statusbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding-inline: var(--space-2);
+  background: var(--surface-2);
+  border-top: 1px solid var(--border-subtle);
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  overflow: hidden;
+}
+
+.statusbar__spacer {
+  flex: 1;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Divisores arrastrables                                                     */
+/* -------------------------------------------------------------------------- */
+
+.resizer-v {
+  width: 4px;
+  cursor: ew-resize;
+  background: transparent;
+  transition: background var(--duration-fast) var(--ease-out);
+}
+
+.resizer-v:hover,
+.resizer-v[data-dragging='true'] {
+  background: var(--accent-500);
+}
+
+.activitybar__top,
+.activitybar__bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}

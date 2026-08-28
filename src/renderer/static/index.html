@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <!--
+      CSP duplicada como defensa en profundidad: la cabecera HTTP la impone
+      la sesion de Electron, esta meta protege si el documento se abriera
+      por cualquier otra via.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self' blob:; child-src 'self' blob:; form-action 'none'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'"
+    />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="color-scheme" content="dark light" />
+    <title>ForgeJS IDE</title>
+    <!-- CSS de Monaco emitido por esbuild junto al bundle del renderer. -->
+    <link rel="stylesheet" href="./index.css" />
+    <link rel="stylesheet" href="./styles/base.css" />
+    <link rel="stylesheet" href="./styles/layout.css" />
+    <link rel="stylesheet" href="./styles/components.css" />
+  </head>
+  <body>
+    <div id="forge-root" class="forge-root" data-booting="true">
+      <div class="boot-screen" role="status" aria-live="polite">
+        <div class="boot-mark" aria-hidden="true">
+          <svg viewBox="0 0 48 48" width="48" height="48">
+            <path
+              d="M8 40 L24 6 L40 40 Z"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="3"
+              stroke-linejoin="round"
+            />
+            <path d="M16 30 H32" fill="none" stroke="currentColor" stroke-width="3" />
+          </svg>
+        </div>
+        <p class="boot-title">ForgeJS IDE</p>
+        <p class="boot-subtitle">Iniciando el motor DotForge…</p>
+      </div>
+    </div>
+    <script type="module" src="./index.js"></script>
+  </body>
+</html>
