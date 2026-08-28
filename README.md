@@ -15,7 +15,7 @@ compilación C++ en la máquina del usuario.
 | Área | Qué hace |
 | --- | --- |
 | **Motor DotForge** | `dotforge.config.json` como fuente de verdad de tareas, pipelines, entornos y servicios. Si el proyecto no tiene manifiesto, se infiere uno desde `package.json` y funciona igual. |
-| **Scaffolding** | 12 arquitecturas listas (React, Next, Vue, Angular, SvelteKit, Express hexagonal, NestJS, Fastify, Next fullstack, Turborepo, Nx), por asistente visual o por CLI `--json`. |
+| **Scaffolding** | 12 blueprints (React, Next, Vue, Angular, SvelteKit, Express, NestJS, Fastify, Next fullstack, Turborepo, Nx) con **patron de arquitectura elegible**, por asistente visual o por CLI `--json`. |
 | **IntelliSense** | Cliente LSP propio sobre stdio con framing `Content-Length`: TypeScript, HTML, CSS, JSON, Volar y Tailwind. Autocompletado, hover, ir a definición, referencias, renombrado, acciones de código, pistas en línea y tokens semánticos. |
 | **Pipelines** | Selector de inicio multiproceso con un canal de salida por proceso, puerto detectado, hipervínculo a `localhost` y estado en vivo. |
 | **Registros** | Parser de Pino, Bunyan, Winston, Morgan y DotForge CLI, con trazas de pila clicables y freno de refresco configurable. |
@@ -57,6 +57,46 @@ npm start
 
 ---
 
+## Patrones de arquitectura
+
+El generador no impone una sola estructura: cada blueprint deja elegir el
+patron, y genera un arbol **real** —con al menos un archivo por capa y las
+importaciones en la direccion que el patron exige— en vez de carpetas vacias.
+
+### React y Next.js
+
+| Patron | Estructura |
+| --- | --- |
+| **Feature-Sliced Design** | `app/`, `processes/`, `pages/`, `widgets/`, `features/`, `entities/`, `shared/` |
+| **Atomic Design** | `atoms/`, `molecules/`, `organisms/`, `templates/`, `pages/` |
+| **Modular / DDD** | `modules/<dominio>/domain/`, `infrastructure/`, `ui/` |
+| **Estandar** | componentes planos en `components/` |
+
+### Angular
+
+| Patron | Estructura |
+| --- | --- |
+| **Clean Standalone** | `features/`, `data-access/`, `ui/` |
+| **DDD Enterprise** | `core/`, `features/<dominio>/`, `shared/ui/`, `shared/utils/` |
+
+### Backend (Express, NestJS, Fastify)
+
+| Patron | Estructura |
+| --- | --- |
+| **Hexagonal** | `domain/` (con `ports/`), `application/`, `infrastructure/`, `adapters/` |
+| **Clean por capas** | `controllers/`, `services/`, `repositories/`, `entities/` |
+
+Las reglas de dependencia no son decorativas: hay pruebas que verifican que
+`shared` no importa de capas superiores en FSD, que un atomo no compone
+moleculas, que el dominio hexagonal no conoce el framework y que en la
+variante por capas el controlador no salta al repositorio.
+
+```bash
+node dist/cli/forge.mjs new react-vite --dir ./web --json '{"architecture":"feature-sliced"}'
+```
+
+---
+
 ## Generador por línea de comandos
 
 El asistente visual y la CLI comparten el mismo motor, así que producen
@@ -67,7 +107,7 @@ node dist/cli/forge.mjs list
 ```
 
 ```bash
-node dist/cli/forge.mjs new express-hexagonal --dir ./mi-api --name "Mi API" --pm pnpm
+node dist/cli/forge.mjs new express --dir ./mi-api --name "Mi API" --pm pnpm
 ```
 
 ```bash

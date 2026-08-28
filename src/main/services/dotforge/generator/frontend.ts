@@ -25,7 +25,35 @@ import {
   PLAYWRIGHT_OPTION,
   TEST_RUNNER_OPTION,
 } from './options.js';
+import { buildAngularArchitecture, type AngularArchitecture } from './architectures/angular-arch.js';
+import { buildReactArchitecture, type ReactArchitecture } from './architectures/react-arch.js';
+import {
+  ANGULAR_ARCHITECTURE_OPTION,
+  REACT_ARCHITECTURE_OPTION,
+  type ArchitectureTree,
+} from './architectures/types.js';
 import { json, type BlueprintContext, type BlueprintDefinition, type FileMap } from './types.js';
+
+/**
+ * Vuelca el arbol de la arquitectura sobre los archivos del blueprint.
+ *
+ * La arquitectura es dueña de `src/`, asi que antes se retiran los archivos
+ * de ejemplo del blueprint: si no, quedarian huerfanos apuntando a modulos
+ * que ya no existen.
+ */
+function applyArchitecture(
+  files: FileMap,
+  tree: ArchitectureTree,
+  owned: readonly string[],
+): ArchitectureTree {
+  for (const key of owned) {
+    files.delete(key);
+  }
+  for (const [path, content] of tree.files) {
+    files.set(path, content);
+  }
+  return tree;
+}
 
 /* -------------------------------------------------------------------------- */
 /*  React + Vite                                                               */
@@ -105,7 +133,7 @@ function reactViteFiles(context: BlueprintContext): FileMap {
   );
 
   files.set(
-    'src/main.tsx',
+    '__blueprint_main__',
     [
       "import { StrictMode } from 'react';",
       "import { createRoot } from 'react-dom/client';",
@@ -128,7 +156,7 @@ function reactViteFiles(context: BlueprintContext): FileMap {
   );
 
   files.set(
-    'src/App.tsx',
+    '__blueprint_app__',
     [
       "import { useCallback, useState } from 'react';",
       '',
@@ -167,7 +195,7 @@ function reactViteFiles(context: BlueprintContext): FileMap {
   );
 
   files.set(
-    'src/App.test.tsx',
+    '__blueprint_app_test__',
     [
       "import { describe, expect, it } from 'vitest';",
       '',
@@ -225,10 +253,18 @@ const REACT_VITE: BlueprintDefinition = {
   description:
     'Aplicacion React 18 con Vite 6, TypeScript estricto, alias @/ y estilos configurables.',
   tags: ['react', 'vite', 'spa'],
-  options: FRONTEND_OPTIONS,
+  options: [REACT_ARCHITECTURE_OPTION, ...FRONTEND_OPTIONS],
 
   build(context) {
     const files = reactViteFiles(context);
+    const arquitectura = applyArchitecture(
+      files,
+      buildReactArchitecture(context.choice('architecture', 'standard') as ReactArchitecture, {
+        projectName: context.projectName,
+        cssModules: context.choice('styling', 'tailwind') === 'css-modules',
+      }),
+      ['__blueprint_main__', '__blueprint_app__', '__blueprint_app_test__', 'src/App.module.css'],
+    );
     addQualityTooling(files, context, { react: true });
     addTesting(files, context, {
       environment: 'jsdom',
@@ -262,7 +298,7 @@ const REACT_VITE: BlueprintDefinition = {
       'README.md',
       readme({
         title: context.projectName,
-        description: 'Aplicacion React con Vite y TypeScript estricto.',
+        description: `Aplicacion React con Vite y TypeScript estricto. ${arquitectura.description}`,
         packageManager: context.packageManager,
         commands: [
           { command: 'dev', description: 'Servidor de desarrollo en el puerto 5173.' },
@@ -270,14 +306,8 @@ const REACT_VITE: BlueprintDefinition = {
           { command: 'test', description: 'Pruebas unitarias.' },
           { command: 'lint', description: 'Analisis estatico.' },
         ],
-        structure: [
-          'src/',
-          '  main.tsx        punto de entrada',
-          '  App.tsx         componente raiz',
-          '  styles/         estilos globales',
-          'index.html',
-          'vite.config.ts',
-        ],
+        structure: [...arquitectura.structure, 'index.html', 'vite.config.ts'],
+        notes: [arquitectura.description, ...arquitectura.notes],
       }),
     );
     return files;
@@ -699,7 +729,7 @@ const VUE_VITE: BlueprintDefinition = {
     );
 
     files.set(
-      'src/main.ts',
+      '__ng_src_main_ts__',
       [
         "import { createPinia } from 'pinia';",
         "import { createApp } from 'vue';",
@@ -867,7 +897,13 @@ const ANGULAR: BlueprintDefinition = {
   tags: ['angular', 'standalone', 'signals'],
   // Angular trae su propio manejo de estilos por componente, asi que la
   // opcion de estilos global no aplica.
-  options: [LINTER_OPTION, TEST_RUNNER_OPTION, PLAYWRIGHT_OPTION, DOCKER_OPTION],
+  options: [
+    ANGULAR_ARCHITECTURE_OPTION,
+    LINTER_OPTION,
+    TEST_RUNNER_OPTION,
+    PLAYWRIGHT_OPTION,
+    DOCKER_OPTION,
+  ],
 
   build(context) {
     const files: FileMap = new Map();
@@ -995,7 +1031,7 @@ const ANGULAR: BlueprintDefinition = {
     );
 
     files.set(
-      'src/app/app.config.ts',
+      '__ng_src_app_app_config_ts__',
       [
         "import type { ApplicationConfig } from '@angular/core';",
         "import { provideZoneChangeDetection } from '@angular/core';",
@@ -1014,7 +1050,7 @@ const ANGULAR: BlueprintDefinition = {
     );
 
     files.set(
-      'src/app/app.routes.ts',
+      '__ng_src_app_app_routes_ts__',
       [
         "import type { Routes } from '@angular/router';",
         '',
@@ -1029,7 +1065,7 @@ const ANGULAR: BlueprintDefinition = {
     );
 
     files.set(
-      'src/app/app.component.ts',
+      '__ng_src_app_app_component_ts__',
       [
         "import { Component } from '@angular/core';",
         "import { RouterOutlet } from '@angular/router';",
@@ -1046,7 +1082,7 @@ const ANGULAR: BlueprintDefinition = {
     );
 
     files.set(
-      'src/app/inicio/inicio.component.ts',
+      '__ng_src_app_inicio_inicio_component_ts__',
       [
         "import { Component, signal } from '@angular/core';",
         '',
@@ -1089,6 +1125,21 @@ const ANGULAR: BlueprintDefinition = {
 
     files.set('src/styles.css', ':root { color-scheme: light dark; font-family: system-ui, sans-serif; }\nbody { margin: 0; }\n');
 
+    const arquitectura = applyArchitecture(
+      files,
+      buildAngularArchitecture(
+        context.choice('architecture', 'clean-standalone') as AngularArchitecture,
+        context.projectName,
+      ),
+      [
+        '__ng_src_main_ts__',
+        '__ng_src_app_app_config_ts__',
+        '__ng_src_app_app_routes_ts__',
+        '__ng_src_app_app_component_ts__',
+        '__ng_src_app_inicio_inicio_component_ts__',
+      ],
+    );
+
     addQualityTooling(files, context);
     addDocker(files, context, { startCommand: '["npx", "http-server", "dist/browser", "-p", "4200"]', port: 4200 });
     files.set('.gitignore', gitignore(['.angular/']));
@@ -1118,14 +1169,15 @@ const ANGULAR: BlueprintDefinition = {
       'README.md',
       readme({
         title: context.projectName,
-        description: 'Aplicacion Angular con componentes standalone y senales.',
+        description: `Aplicacion Angular con componentes standalone y senales. ${arquitectura.description}`,
         packageManager: context.packageManager,
         commands: [
           { command: 'dev', description: 'Servidor de desarrollo en el puerto 4200.' },
           { command: 'build', description: 'Compilacion de produccion.' },
           { command: 'test', description: 'Pruebas unitarias.' },
         ],
-        structure: ['src/app/', '  app.component.ts   raiz', '  app.routes.ts      rutas', '  inicio/            pagina de inicio'],
+        structure: arquitectura.structure,
+        notes: [arquitectura.description, ...arquitectura.notes],
       }),
     );
     return files;

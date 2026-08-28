@@ -158,32 +158,32 @@ test('la opcion de linter cambia los archivos de calidad', () => {
 });
 
 test('la opcion de Docker anade Dockerfile y compose solo cuando procede', () => {
-  const sinDocker = planFor('express-hexagonal', { docker: false });
+  const sinDocker = planFor('express', { docker: false });
   assert.equal(sinDocker.has('Dockerfile'), false);
   assert.equal(sinDocker.has('docker-compose.yml'), false);
 
-  const conDocker = planFor('express-hexagonal', { docker: true, database: 'postgres' });
+  const conDocker = planFor('express', { docker: true, database: 'postgres' });
   assert.ok(conDocker.has('Dockerfile'));
   assert.ok(conDocker.get('docker-compose.yml')?.includes('postgres:16-alpine'));
 
-  const sinBase = planFor('express-hexagonal', { docker: true, database: 'none', redis: false });
+  const sinBase = planFor('express', { docker: true, database: 'none', redis: false });
   assert.ok(sinBase.has('Dockerfile'));
   assert.equal(sinBase.has('docker-compose.yml'), false);
 });
 
 test('la opcion de ORM cambia los archivos de persistencia', () => {
-  assert.ok(planFor('express-hexagonal', { orm: 'prisma' }).has('prisma/schema.prisma'));
+  assert.ok(planFor('express', { orm: 'prisma' }).has('prisma/schema.prisma'));
   assert.ok(
-    planFor('express-hexagonal', { orm: 'drizzle' }).has('src/infrastructure/persistence/schema.ts'),
+    planFor('express', { orm: 'drizzle' }).has('src/infrastructure/persistence/schema.ts'),
   );
   assert.ok(
-    planFor('express-hexagonal', { orm: 'typeorm' }).has('src/infrastructure/persistence/item.entity.ts'),
+    planFor('express', { orm: 'typeorm' }).has('src/infrastructure/persistence/item.entity.ts'),
   );
-  assert.equal(planFor('express-hexagonal', { orm: 'none' }).has('prisma/schema.prisma'), false);
+  assert.equal(planFor('express', { orm: 'none' }).has('prisma/schema.prisma'), false);
 });
 
 test('el blueprint hexagonal mantiene el dominio libre de infraestructura', () => {
-  const files = planFor('express-hexagonal');
+  const files = planFor('express');
   for (const [relative, content] of files) {
     if (!relative.startsWith('src/domain/')) {
       continue;
@@ -245,7 +245,7 @@ test('dryRun devuelve el plan sin escribir nada', async () => {
 test('la generacion real escribe el arbol completo', async () => {
   const target = temporaryDir();
   const result = await generate({
-    blueprintId: 'express-hexagonal',
+    blueprintId: 'express',
     targetDir: target,
     projectName: 'API Demo',
     packageManager: 'npm',

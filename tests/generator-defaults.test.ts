@@ -26,11 +26,11 @@ test.after(() => {
 });
 
 test('sin opciones se aplican los valores por defecto del blueprint', async () => {
-  const blueprint = findBlueprint('express-hexagonal');
+  const blueprint = findBlueprint('express');
   assert.ok(blueprint !== undefined);
 
   const sinOpciones = await generate({
-    blueprintId: 'express-hexagonal',
+    blueprintId: 'express',
     targetDir: temporaryDir(),
     projectName: 'API Demo',
     packageManager: 'npm',
@@ -48,7 +48,7 @@ test('sin opciones se aplican los valores por defecto del blueprint', async () =
 
 test('una opcion explicita gana sobre el valor por defecto', async () => {
   const resultado = await generate({
-    blueprintId: 'express-hexagonal',
+    blueprintId: 'express',
     targetDir: temporaryDir(),
     projectName: 'API Demo',
     packageManager: 'npm',

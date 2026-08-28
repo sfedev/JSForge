@@ -17,8 +17,41 @@ import {
   tsconfig,
 } from './common.js';
 import { prismaSchema } from './frontend.js';
+import {
+  buildBackendArchitecture,
+  type BackendArchitecture,
+  type BackendFramework,
+} from './architectures/backend-arch.js';
+import { BACKEND_ARCHITECTURE_OPTION, type ArchitectureTree } from './architectures/types.js';
 import { BACKEND_OPTIONS } from './options.js';
+
 import { json, type BlueprintContext, type BlueprintDefinition, type FileMap } from './types.js';
+
+/**
+ * La arquitectura posee `src/`. El blueprint conserva la configuracion
+ * (package.json, tsconfig, Docker) y el ORM, que son ortogonales al patron.
+ */
+function applyBackendArchitecture(
+  files: FileMap,
+  context: BlueprintContext,
+  framework: BackendFramework,
+): ArchitectureTree {
+  // Se limpia todo `src/` salvo lo que aporta el ORM, que vive en
+  // infrastructure/persistence y lo escribe `ormFiles` despues.
+  for (const key of [...files.keys()]) {
+    if (key.startsWith('src/')) {
+      files.delete(key);
+    }
+  }
+  const tree = buildBackendArchitecture(
+    context.choice('architecture', 'hexagonal') as BackendArchitecture,
+    framework,
+  );
+  for (const [path, content] of tree.files) {
+    files.set(path, content);
+  }
+  return tree;
+}
 
 /** URL de conexion por defecto segun la base de datos elegida. */
 function databaseUrl(database: string, name: string): string {
@@ -170,14 +203,14 @@ function ormFiles(context: BlueprintContext, files: FileMap): void {
 /*  Express — arquitectura hexagonal                                           */
 /* -------------------------------------------------------------------------- */
 
-const EXPRESS_HEXAGONAL: BlueprintDefinition = {
-  id: 'express-hexagonal',
-  label: 'Express (arquitectura hexagonal)',
+const EXPRESS: BlueprintDefinition = {
+  id: 'express',
+  label: 'Express.js',
   category: 'backend',
   description:
-    'Express en TypeScript con dominio, casos de uso e infraestructura separados; los puertos se definen en el dominio y los adaptadores los implementan.',
-  tags: ['express', 'hexagonal', 'clean-architecture'],
-  options: BACKEND_OPTIONS,
+    'API Express en TypeScript estricto, con el patron de arquitectura elegible entre hexagonal y clean por capas.',
+  tags: ['express', 'api', 'hexagonal', 'layered'],
+  options: [BACKEND_ARCHITECTURE_OPTION, ...BACKEND_OPTIONS],
 
   build(context) {
     const files: FileMap = new Map();
@@ -544,6 +577,7 @@ const EXPRESS_HEXAGONAL: BlueprintDefinition = {
       ].join('\n'),
     );
 
+    const arquitectura = applyBackendArchitecture(files, context, 'express');
     ormFiles(context, files);
 
     files.set(
@@ -612,7 +646,7 @@ const EXPRESS_HEXAGONAL: BlueprintDefinition = {
       'README.md',
       readme({
         title: context.projectName,
-        description: 'API Express con arquitectura hexagonal en TypeScript estricto.',
+        description: `API Express en TypeScript estricto. ${arquitectura.description}`,
         packageManager: context.packageManager,
         commands: [
           { command: 'dev', description: 'API con recarga en caliente.' },
@@ -620,17 +654,8 @@ const EXPRESS_HEXAGONAL: BlueprintDefinition = {
           { command: 'test', description: 'Pruebas de los casos de uso.' },
           { command: 'lint', description: 'Analisis estatico.' },
         ],
-        structure: [
-          'src/',
-          '  domain/          entidades y puertos (sin dependencias)',
-          '  application/     casos de uso',
-          '  infrastructure/  adaptadores: HTTP y persistencia',
-          '  main.ts          composicion y arranque',
-        ],
-        notes: [
-          'El dominio no importa nada de infraestructura: esa es la regla que sostiene la arquitectura.',
-          'El repositorio en memoria permite arrancar sin base de datos; sustituyelo por el adaptador real cuando toque.',
-        ],
+        structure: arquitectura.structure,
+        notes: [arquitectura.description, ...arquitectura.notes],
       }),
     );
     return files;
@@ -659,7 +684,7 @@ const NESTJS: BlueprintDefinition = {
   category: 'backend',
   description: 'NestJS 10 con modulos, DTO validados, filtro de excepciones y ORM configurable.',
   tags: ['nestjs', 'modular', 'api'],
-  options: BACKEND_OPTIONS,
+  options: [BACKEND_ARCHITECTURE_OPTION, ...BACKEND_OPTIONS],
 
   build(context) {
     const files: FileMap = new Map();
@@ -929,6 +954,7 @@ const NESTJS: BlueprintDefinition = {
       ].join('\n'),
     );
 
+    const arquitectura = applyBackendArchitecture(files, context, 'nestjs');
     ormFiles(context, files);
 
     files.set(
@@ -988,19 +1014,15 @@ const NESTJS: BlueprintDefinition = {
       'README.md',
       readme({
         title: context.projectName,
-        description: 'API NestJS modular con validacion por DTO.',
+        description: `API NestJS con validacion por DTO. ${arquitectura.description}`,
         packageManager: context.packageManager,
         commands: [
           { command: 'dev', description: 'Servidor con recarga en caliente.' },
           { command: 'build', description: 'Compilacion de produccion.' },
           { command: 'test', description: 'Pruebas de los servicios.' },
         ],
-        structure: [
-          'src/',
-          '  items/     modulo de ejemplo (controlador, servicio, DTO)',
-          '  salud/     comprobacion de salud',
-          '  app.module.ts',
-        ],
+        structure: arquitectura.structure,
+        notes: [arquitectura.description, ...arquitectura.notes],
       }),
     );
     return files;
@@ -1026,7 +1048,7 @@ const FASTIFY: BlueprintDefinition = {
   category: 'backend',
   description: 'Fastify 5 con plugins tipados, validacion por esquema JSON y registro estructurado.',
   tags: ['fastify', 'api', 'performance'],
-  options: BACKEND_OPTIONS,
+  options: [BACKEND_ARCHITECTURE_OPTION, ...BACKEND_OPTIONS],
 
   build(context) {
     const files: FileMap = new Map();
@@ -1184,6 +1206,7 @@ const FASTIFY: BlueprintDefinition = {
       ].join('\n'),
     );
 
+    const arquitectura = applyBackendArchitecture(files, context, 'fastify');
     ormFiles(context, files);
     files.set(
       '.env.example',
@@ -1232,13 +1255,14 @@ const FASTIFY: BlueprintDefinition = {
       'README.md',
       readme({
         title: context.projectName,
-        description: 'API Fastify con plugins tipados y validacion por esquema.',
+        description: `API Fastify con validacion por esquema. ${arquitectura.description}`,
         packageManager: context.packageManager,
         commands: [
           { command: 'dev', description: 'Servidor con recarga en caliente.' },
           { command: 'build', description: 'Compila a `dist/`.' },
         ],
-        structure: ['src/', '  app.ts       composicion', '  plugins/     rutas como plugins', '  main.ts      arranque'],
+        structure: arquitectura.structure,
+        notes: [arquitectura.description, ...arquitectura.notes],
       }),
     );
     return files;
@@ -1255,7 +1279,7 @@ const FASTIFY: BlueprintDefinition = {
 };
 
 export const BACKEND_BLUEPRINTS: readonly BlueprintDefinition[] = [
-  EXPRESS_HEXAGONAL,
+  EXPRESS,
   NESTJS,
   FASTIFY,
 ];
