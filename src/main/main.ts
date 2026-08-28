@@ -21,6 +21,7 @@ import { applySessionHardening } from './security/window-hardening.js';
 import { getSettings } from './services/settings-service.js';
 import { closeWorkspace, setChangeThrottle } from './services/workspace-service.js';
 import { disposeAllProcesses } from './services/process/process-manager.js';
+import { stopAllServers } from './services/lsp/lsp-manager.js';
 import { createMainWindow, getMainWindow } from './window.js';
 
 /** Directorio del bundle del renderer servido por `forge://app`. */
@@ -116,6 +117,7 @@ function shutdown(): void {
   shuttingDown = true;
   try {
     disposeAllProcesses();
+    void stopAllServers();
     closeWorkspace();
   } catch (cause) {
     console.error('[forge] fallo al cerrar el workspace', cause);

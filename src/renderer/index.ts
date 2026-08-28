@@ -25,6 +25,7 @@ import { registerSearchView } from './views/search-view.js';
 import { registerPipelinesView } from './views/pipelines-view.js';
 import { registerOutputView } from './views/output-view.js';
 import { registerGitView } from './views/git-view.js';
+import { registerLspBridge } from './lsp/lsp-bridge.js';
 
 async function boot(): Promise<void> {
   const root = query<HTMLElement>('#forge-root');
@@ -54,6 +55,8 @@ async function boot(): Promise<void> {
   mountActivityBar(mounts);
   mountSidebar(mounts);
   mountEditorArea(mounts);
+  // El puente LSP necesita Monaco ya creado.
+  registerLspBridge();
   mountPanel(mounts);
   mountAiPanel(mounts);
   mountStatusBar(mounts);

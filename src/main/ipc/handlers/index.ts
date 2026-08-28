@@ -9,10 +9,12 @@ import { registerCoreHandlers } from './core-handlers.js';
 import { registerDotForgeHandlers } from './dotforge-handlers.js';
 import { registerFsHandlers } from './fs-handlers.js';
 import { registerGitHandlers } from './git-handlers.js';
+import { registerLspHandlers } from './lsp-handlers.js';
 
 export function registerAllHandlers(): void {
   registerCoreHandlers();
   registerFsHandlers();
   registerDotForgeHandlers();
   registerGitHandlers();
+  registerLspHandlers();
 }
