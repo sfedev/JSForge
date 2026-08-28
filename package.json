@@ -1,0 +1,86 @@
+{
+  "name": "forgejs-ide",
+  "productName": "ForgeJS IDE",
+  "version": "0.1.0",
+  "description": "IDE de escritorio liviano y de alto rendimiento para el ecosistema Fullstack JavaScript/TypeScript, impulsado por el motor DotForge.",
+  "author": {
+    "name": "Sergio Rayo",
+    "email": "sergiiorayo17@gmail.com"
+  },
+  "license": "MIT",
+  "private": true,
+  "main": "dist/main/main.js",
+  "type": "module",
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "scripts": {
+    "clean": "node scripts/clean.mjs",
+    "build": "node scripts/build.mjs",
+    "build:watch": "node scripts/build.mjs --watch",
+    "dev": "node scripts/dev.mjs",
+    "start": "electron .",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --test --experimental-strip-types tests/**/*.test.ts",
+    "package": "npm run build && electron-builder --dir",
+    "dist": "npm run build && electron-builder"
+  },
+  "dependencies": {
+    "monaco-editor": "^0.52.2",
+    "prettier": "^3.4.2",
+    "@xterm/xterm": "^5.5.0",
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/addon-search": "^0.15.0",
+    "@xterm/addon-web-links": "^0.11.0"
+  },
+  "optionalDependencies": {
+    "node-pty": "^1.0.0",
+    "typescript-language-server": "^4.3.3",
+    "typescript": "^5.7.2",
+    "vscode-langservers-extracted": "^4.10.0",
+    "@vue/language-server": "^2.2.0",
+    "tailwindcss-language-server": "^0.14.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "electron": "^33.3.1",
+    "electron-builder": "^25.1.8",
+    "esbuild": "^0.24.2",
+    "typescript": "^5.7.2"
+  },
+  "build": {
+    "appId": "dev.dotforge.forgejs-ide",
+    "productName": "ForgeJS IDE",
+    "directories": {
+      "output": "release",
+      "buildResources": "resources"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "**/node_modules/node-pty/**"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "zip"
+      ]
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.developer-tools"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Development"
+    }
+  }
+}
