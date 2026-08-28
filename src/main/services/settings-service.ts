@@ -84,6 +84,7 @@ export function sanitizeSettings(raw: unknown): Partial<ForgeSettings> {
     ...pickBoolean(raw, 'semanticHighlighting'),
     ...pickString(raw, 'updateChannel', ['stable', 'beta', 'nightly']),
     ...pickBoolean(raw, 'autoInstallUpdates'),
+    ...pickBoolean(raw, 'aiEnabled'),
     ...pickString(raw, 'aiProvider', ['anthropic', 'openai', 'ollama']),
     ...pickString(raw, 'aiModel'),
     ...pickString(raw, 'terminalProfile'),

@@ -80,6 +80,12 @@ export interface ForgeWorkspaceApi {
   close(): Promise<Result<true>>;
   current(): Promise<Result<WorkspaceInfo | null>>;
   recent(): Promise<Result<readonly string[]>>;
+  /**
+   * Abre el selector nativo de carpeta y devuelve la ruta elegida SIN
+   * abrirla como workspace. Lo usa el asistente de scaffolding para elegir
+   * el destino de un proyecto nuevo.
+   */
+  pickDirectory(title?: string): Promise<Result<string | null>>;
 }
 
 export interface ForgeFileSystemApi {

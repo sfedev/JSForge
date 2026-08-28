@@ -43,6 +43,8 @@ export const ICONS = {
   copy: 'M9 9h10v10H9zM5 15V5h10',
   container: 'M4 9h16v9H4zM4 9l3-4h10l3 4M9 13h6',
   layers: 'M12 3l9 5-9 5-9-5zM3 13l9 5 9-5M3 17l9 5 9-5',
+  trash: 'M4 7h16M10 11v6M14 11v6M5 7l1 13h12l1-13M9 7V4h6v3',
+  power: 'M12 4v8M7.5 7a7 7 0 1 0 9 0',
 } as const;
 
 export type IconName = keyof typeof ICONS;

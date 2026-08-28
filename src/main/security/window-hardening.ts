@@ -49,6 +49,14 @@ const ALLOWED_SCHEMES = new Set(['forge:', 'devtools:', 'blob:', 'data:', 'file:
 const EXTERNAL_PROTOCOLS = new Set(['http:', 'https:', 'mailto:']);
 
 /**
+ * Unicos permisos concedidos. `clipboard-sanitized-write` es el que consulta
+ * Chromium para `navigator.clipboard.writeText`; el resto se deniega.
+ */
+const ALLOWED_PERMISSIONS: ReadonlySet<string> = new Set([
+  'clipboard-sanitized-write',
+]);
+
+/**
  * Comprueba si una URL puede abrirse en el navegador del sistema.
  * Se usa tanto aqui como en el manejador IPC `app/open-external`.
  */
@@ -73,11 +81,16 @@ export function applySessionHardening(session: Session): void {
     });
   });
 
-  // Ningun permiso del navegador es necesario para el IDE.
-  session.setPermissionRequestHandler((_contents, _permission, callback) => {
-    callback(false);
+  // El IDE no necesita camara, microfono, geolocalizacion ni notificaciones.
+  // La unica excepcion es escribir en el portapapeles: los botones de copiar
+  // del panel de IA y del cliente HTTP dependen de ella, y denegarla los
+  // rompia en silencio.
+  session.setPermissionRequestHandler((_contents, permission, callback) => {
+    callback(ALLOWED_PERMISSIONS.has(permission));
   });
-  session.setPermissionCheckHandler(() => false);
+  session.setPermissionCheckHandler((_contents, permission) =>
+    ALLOWED_PERMISSIONS.has(permission),
+  );
 
   // El renderer solo puede cargar recursos del propio bundle.
   session.webRequest.onBeforeRequest((details, callback) => {

@@ -10,6 +10,7 @@
 import type * as MonacoNs from 'monaco-editor';
 
 import { h, svgIcon } from '../core/dom.js';
+import { confirmDialog } from '../core/dialogs.js';
 import { ICONS } from '../core/icons.js';
 import { defineCommands, runCommand } from '../core/commands.js';
 import { findDocument, store, type OpenDocument } from '../core/store.js';
@@ -134,7 +135,7 @@ export function mountEditorArea(mounts: ShellMounts): void {
   });
 
   renderTabs(mounts);
-  store.subscribe(['documents', 'activeDocument'], () => renderTabs(mounts));
+  store.subscribe(['documents', 'activeDocument', 'workspace'], () => renderTabs(mounts));
   store.subscribe(['settings'], applySettings);
 
   defineCommands([
@@ -165,7 +166,7 @@ export function mountEditorArea(mounts: ShellMounts): void {
       run: () => {
         const active = store.state.activeDocument;
         if (active !== null) {
-          closeDocument(active);
+          void closeDocument(active);
         }
       },
     },
@@ -175,7 +176,7 @@ export function mountEditorArea(mounts: ShellMounts): void {
       category: 'Archivo',
       run: () => {
         for (const document of [...store.state.documents]) {
-          closeDocument(document.path);
+          void closeDocument(document.path);
         }
       },
     },
@@ -256,7 +257,7 @@ function renderTabs(mounts: ShellMounts): void {
     tab.addEventListener('auxclick', (event) => {
       if ((event as MouseEvent).button === 1) {
         event.preventDefault();
-        closeDocument(document.path);
+        void closeDocument(document.path);
       }
     });
     mounts.editorTabs.appendChild(tab);
@@ -265,6 +266,80 @@ function renderTabs(mounts: ShellMounts): void {
   const hasDocuments = state.documents.length > 0;
   emptyHost.style.display = hasDocuments ? 'none' : 'flex';
   editorHost.style.display = hasDocuments ? 'block' : 'none';
+  if (!hasDocuments) {
+    renderWelcome();
+  }
+}
+
+/**
+ * Pantalla de bienvenida.
+ *
+ * Es el unico sitio donde el usuario mira al abrir el IDE sin proyecto, asi
+ * que aqui viven las dos acciones de arranque: abrir una carpeta y generar
+ * un proyecto nuevo con DotForge. Antes el generador solo existia en la
+ * paleta de comandos y no habia forma de descubrirlo.
+ */
+function renderWelcome(): void {
+  const hasWorkspace = store.state.workspace !== null;
+
+  const action = (
+    label: string,
+    hint: string,
+    icon: keyof typeof ICONS,
+    commandId: string,
+    primary: boolean,
+  ): HTMLElement => {
+    const button = h('button', {
+      class: primary ? 'btn btn--primary' : 'btn btn--ghost',
+      type: 'button',
+      style: 'height:34px;padding-inline:14px',
+    });
+    button.append(svgIcon(ICONS[icon], 14), label);
+    button.addEventListener('click', () => void runCommand(commandId));
+
+    return h(
+      'div',
+      { style: 'display:flex;flex-direction:column;align-items:center;gap:6px' },
+      button,
+      h('span', { class: 'list-row__hint' }, hint),
+    );
+  };
+
+  const actions = h('div', { style: 'display:flex;gap:16px;flex-wrap:wrap;justify-content:center' });
+  if (hasWorkspace) {
+    actions.append(
+      action('Ir al archivo', 'Ctrl+P', 'search', 'palette.openFiles', true),
+      action('Nuevo archivo', '', 'plus', 'explorer.newFile', false),
+      action('Generar proyecto', 'Blueprints DotForge', 'layers', 'dotforge.newProject', false),
+    );
+  } else {
+    actions.append(
+      action('Abrir carpeta', 'Ctrl+K Ctrl+O', 'folderOpen', 'workspace.open', true),
+      action('Generar proyecto', '12 arquitecturas listas', 'layers', 'dotforge.newProject', false),
+    );
+  }
+
+  emptyHost.replaceChildren(
+    h(
+      'p',
+      { style: 'font-size:19px;font-weight:600;color:var(--text-strong);letter-spacing:-0.01em' },
+      hasWorkspace ? (store.state.workspace?.name ?? 'ForgeJS IDE') : 'ForgeJS IDE',
+    ),
+    h(
+      'p',
+      { style: 'color:var(--text-muted);margin-bottom:8px' },
+      hasWorkspace
+        ? 'Ningun archivo abierto.'
+        : 'Abre un proyecto existente o genera uno nuevo con el motor DotForge.',
+    ),
+    actions,
+    h(
+      'p',
+      { style: 'margin-top:14px' },
+      'Todos los comandos estan en la paleta: ',
+      h('span', { class: 'kbd' }, 'Ctrl+Shift+P'),
+    ),
+  );
 }
 
 /* -------------------------------------------------------------------------- */
@@ -412,15 +487,20 @@ export function openDiff(
   }
 }
 
-export function closeDocument(pathOrKey: string): void {
+export async function closeDocument(pathOrKey: string): Promise<void> {
   const document = findDocument(pathOrKey);
   if (document === undefined) {
     return;
   }
   if (document.dirty) {
-    const keep = window.confirm(
-      `"${document.title}" tiene cambios sin guardar. ¿Cerrar de todas formas?`,
-    );
+    const keep = await confirmDialog({
+      title: 'Cambios sin guardar',
+      message: `"${document.title}" tiene cambios sin guardar.`,
+      detail: 'Si cierras la pestana, se perderan.',
+      confirmLabel: 'Cerrar sin guardar',
+      cancelLabel: 'Seguir editando',
+      danger: true,
+    });
     if (!keep) {
       return;
     }
@@ -524,9 +604,14 @@ async function saveDocument(pathOrKey: string): Promise<void> {
 
   if (!result.ok) {
     if (result.error.code === 'E_CONFLICT') {
-      const overwrite = window.confirm(
-        `"${document.title}" cambio en el disco desde que se abrio. ¿Sobrescribir?`,
-      );
+      const overwrite = await confirmDialog({
+        title: 'El archivo cambio en el disco',
+        message: `"${document.title}" fue modificado fuera del IDE desde que se abrio.`,
+        detail: 'Si sobrescribes, se perderan esos cambios externos.',
+        confirmLabel: 'Sobrescribir',
+        cancelLabel: 'Cancelar',
+        danger: true,
+      });
       if (!overwrite) {
         return;
       }

@@ -100,6 +100,7 @@ const api: ForgeApi = {
     close: () => call(IPC.WORKSPACE_CLOSE),
     current: () => call(IPC.WORKSPACE_CURRENT),
     recent: () => call(IPC.WORKSPACE_RECENT),
+    pickDirectory: (title?: string) => call(IPC.DIALOG_PICK_DIRECTORY, title ?? null),
   },
 
   fileSystem: {

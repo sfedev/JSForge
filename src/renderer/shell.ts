@@ -120,20 +120,9 @@ export function buildShell(root: HTMLElement): ShellMounts {
   /* --- Editor --- */
   const editorTabs = h('div', { class: 'editor-area__tabs', role: 'tablist' });
   const editorMonaco = h('div', { class: 'editor-area__monaco' });
-  const editorEmpty = h(
-    'div',
-    { class: 'editor-area__empty' },
-    h('p', { style: 'font-size:15px;color:var(--text-muted)' }, 'Ningun archivo abierto'),
-    h(
-      'p',
-      {},
-      'Abre una carpeta con ',
-      h('span', { class: 'kbd' }, 'Ctrl+K Ctrl+O'),
-      ' o usa la paleta con ',
-      h('span', { class: 'kbd' }, 'Ctrl+Shift+P'),
-      '.',
-    ),
-  );
+  // El contenido lo rellena `editor-area` al montarse, porque necesita
+  // lanzar comandos y reaccionar a si hay carpeta abierta o no.
+  const editorEmpty = h('div', { class: 'editor-area__empty' });
   const editorSurface = h('div', { class: 'editor-area__surface' }, editorMonaco, editorEmpty);
   const editorArea = h('section', { class: 'editor-area' }, editorTabs, editorSurface);
 

@@ -8,6 +8,7 @@
  */
 
 import { h, svgIcon, debounce } from '../core/dom.js';
+import { confirmDialog, promptDialog } from '../core/dialogs.js';
 import { ICONS } from '../core/icons.js';
 import { defineCommands, runCommand } from '../core/commands.js';
 import { store } from '../core/store.js';
@@ -172,12 +173,15 @@ function render(): void {
   if (store.state.workspace === null) {
     const open = h('button', { class: 'btn btn--primary', type: 'button' }, 'Abrir carpeta…');
     open.addEventListener('click', () => void runCommand('workspace.open'));
+    const create = h('button', { class: 'btn btn--ghost', type: 'button' }, 'Generar proyecto…');
+    create.addEventListener('click', () => void runCommand('dotforge.newProject'));
     host.appendChild(
       h(
         'div',
-        { class: 'empty-note', style: 'display:flex;flex-direction:column;gap:12px;align-items:center' },
+        { class: 'empty-note', style: 'display:flex;flex-direction:column;gap:10px;align-items:center' },
         'No hay ninguna carpeta abierta.',
         open,
+        create,
       ),
     );
     return;
@@ -293,16 +297,44 @@ function findNode(nodes: readonly TreeNode[], path: string): TreeNode | undefine
   return undefined;
 }
 
+/**
+ * Valida un nombre de archivo o carpeta antes de enviarlo al guardian.
+ * Adelantar aqui la comprobacion da un mensaje util en el propio dialogo en
+ * lugar de un error generico despues.
+ */
+function validateEntryName(value: string): string | null {
+  if (value === '') {
+    return 'Escribe un nombre.';
+  }
+  if (value.includes('/') || value.includes('\\')) {
+    return 'El nombre no puede contener barras.';
+  }
+  if (value === '.' || value === '..') {
+    return 'Ese nombre esta reservado.';
+  }
+  if (/[<>:"|?*]/.test(value)) {
+    return 'El nombre contiene caracteres no validos en Windows.';
+  }
+  if (/^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\.|$)/i.test(value)) {
+    return 'Ese nombre esta reservado por el sistema.';
+  }
+  return null;
+}
+
 async function createEntry(kind: 'file' | 'directory'): Promise<void> {
   const base = baseDirectory();
-  const name = window.prompt(
-    kind === 'file' ? 'Nombre del nuevo archivo:' : 'Nombre de la nueva carpeta:',
-    '',
-  );
-  if (name === null || name.trim() === '') {
+  const name = await promptDialog({
+    title: kind === 'file' ? 'Nuevo archivo' : 'Nueva carpeta',
+    label: 'Nombre',
+    placeholder: kind === 'file' ? 'componente.tsx' : 'componentes',
+    detail: base === '' ? 'Se creara en la raiz del workspace.' : `Se creara dentro de "${base}".`,
+    confirmLabel: 'Crear',
+    validate: validateEntryName,
+  });
+  if (name === null) {
     return;
   }
-  const target = base === '' ? name.trim() : `${base}/${name.trim()}`;
+  const target = base === '' ? name : `${base}/${name}`;
   const result =
     kind === 'file'
       ? await window.forge.fileSystem.createFile(target, '')
@@ -328,11 +360,18 @@ async function renameSelected(): Promise<void> {
   const slash = current.lastIndexOf('/');
   const directory = slash === -1 ? '' : current.slice(0, slash);
   const name = current.slice(slash + 1);
-  const next = window.prompt('Nuevo nombre:', name);
-  if (next === null || next.trim() === '' || next.trim() === name) {
+  const next = await promptDialog({
+    title: 'Renombrar',
+    label: 'Nuevo nombre',
+    value: name,
+    detail: current,
+    confirmLabel: 'Renombrar',
+    validate: validateEntryName,
+  });
+  if (next === null || next === name) {
     return;
   }
-  const target = directory === '' ? next.trim() : `${directory}/${next.trim()}`;
+  const target = directory === '' ? next : `${directory}/${next}`;
   const result = await window.forge.fileSystem.rename(current, target);
   if (!result.ok) {
     toastError('No se pudo renombrar.', result.error);
@@ -347,7 +386,14 @@ async function deleteSelected(): Promise<void> {
     return;
   }
   const target = selected;
-  if (!window.confirm(`¿Eliminar "${target}"? Esta accion no se puede deshacer desde el IDE.`)) {
+  const confirmed = await confirmDialog({
+    title: 'Eliminar',
+    message: `¿Eliminar "${target}"?`,
+    detail: 'El IDE no puede deshacer esta accion.',
+    confirmLabel: 'Eliminar',
+    danger: true,
+  });
+  if (!confirmed) {
     return;
   }
   const result = await window.forge.fileSystem.remove(target);

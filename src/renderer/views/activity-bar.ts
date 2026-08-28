@@ -4,6 +4,7 @@ import { h, svgIcon } from '../core/dom.js';
 import { ICONS } from '../core/icons.js';
 import { defineCommands, runCommand } from '../core/commands.js';
 import { store, type SidebarView } from '../core/store.js';
+import { toast } from '../core/toasts.js';
 import { ACTIVITY_ITEMS, type ShellMounts } from '../shell.js';
 
 export function mountActivityBar(mounts: ShellMounts): void {
@@ -28,7 +29,7 @@ export function mountActivityBar(mounts: ShellMounts): void {
     type: 'button',
     title: 'Forge AI (Ctrl+Shift+I)',
     'aria-label': 'Forge AI',
-  });
+  }) as HTMLButtonElement;
   aiButton.appendChild(svgIcon(ICONS.ai, 19));
   aiButton.addEventListener('click', () => void runCommand('ai.toggle'));
 
@@ -79,9 +80,19 @@ export function mountActivityBar(mounts: ShellMounts): void {
       const active = state.sidebarView === view && state.sidebarVisible;
       button.dataset['active'] = String(active);
     }
-    aiButton.dataset['active'] = String(state.auxVisible);
+    // Con la IA desactivada el boton queda inhabilitado, no solo oculto:
+    // asi no se pulsa por error ni se abre el panel con un atajo.
+    const aiEnabled = state.settings.aiEnabled;
+    aiButton.disabled = !aiEnabled;
+    aiButton.dataset['active'] = String(aiEnabled && state.auxVisible);
+    aiButton.style.opacity = aiEnabled ? '' : '0.35';
+    aiButton.style.cursor = aiEnabled ? '' : 'not-allowed';
+    aiButton.title = aiEnabled
+      ? 'Forge AI (Ctrl+Shift+I)'
+      : 'Forge AI esta desactivado en las preferencias';
+
     mounts.root.dataset['sidebar'] = state.sidebarVisible ? 'visible' : 'hidden';
-    mounts.root.dataset['aux'] = state.auxVisible ? 'visible' : 'hidden';
+    mounts.root.dataset['aux'] = aiEnabled && state.auxVisible ? 'visible' : 'hidden';
 
     const git = state.git;
     const gitCount =
@@ -96,7 +107,7 @@ export function mountActivityBar(mounts: ShellMounts): void {
     setBadge('pipelines', running);
   };
 
-  store.subscribe(['sidebarView', 'sidebarVisible', 'auxVisible', 'git', 'processes'], render);
+  store.subscribe(['sidebarView', 'sidebarVisible', 'auxVisible', 'git', 'processes', 'settings'], render);
   render();
 
   defineCommands([
@@ -116,7 +127,14 @@ export function mountActivityBar(mounts: ShellMounts): void {
       id: 'ai.toggle',
       title: 'Alternar Forge AI',
       category: 'Vista',
-      run: () => store.patch({ auxVisible: !store.state.auxVisible }),
+      enabled: () => store.state.settings.aiEnabled,
+      run: () => {
+        if (!store.state.settings.aiEnabled) {
+          toast('info', 'Forge AI esta desactivado.', 'Puedes activarlo en las preferencias.');
+          return;
+        }
+        store.patch({ auxVisible: !store.state.auxVisible });
+      },
     },
     {
       id: 'view.toggleTheme',

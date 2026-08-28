@@ -200,3 +200,19 @@ export function formatClock(timestamp: number): string {
     3,
   )}`;
 }
+
+/**
+ * Copia al portapapeles informando del resultado.
+ *
+ * `navigator.clipboard` rechaza la promesa si el permiso esta denegado o el
+ * documento no tiene foco; ignorarla dejaba botones que no hacian nada sin
+ * decir por que.
+ */
+export async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    return false;
+  }
+}

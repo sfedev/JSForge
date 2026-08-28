@@ -131,6 +131,25 @@ export function registerCoreHandlers(): void {
     ok(getSettings().recentWorkspaces),
   );
 
+  /**
+   * Selector de carpeta sin efectos secundarios: no abre el workspace ni
+   * toca el historial reciente. El asistente de scaffolding lo necesita para
+   * elegir el destino de un proyecto nuevo sin cambiar el proyecto abierto.
+   */
+  handle<[string | null], string | null>(IPC.DIALOG_PICK_DIRECTORY, async (title) => {
+    const window = getMainWindow();
+    const options = {
+      title: typeof title === 'string' && title !== '' ? title : 'Elegir carpeta',
+      properties: ['openDirectory', 'createDirectory'] as ('openDirectory' | 'createDirectory')[],
+    };
+    const result =
+      window === null
+        ? await dialog.showOpenDialog(options)
+        : await dialog.showOpenDialog(window, options);
+    const picked = result.filePaths[0];
+    return ok(result.canceled || picked === undefined ? null : picked);
+  });
+
   /* ---------------------------------------------------------------------- */
   /*  Preferencias                                                          */
   /* ---------------------------------------------------------------------- */

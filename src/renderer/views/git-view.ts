@@ -7,6 +7,7 @@
  */
 
 import { h, svgIcon, debounce } from '../core/dom.js';
+import { confirmDialog, promptDialog, selectDialog } from '../core/dialogs.js';
 import { ICONS } from '../core/icons.js';
 import { defineCommands, runCommand } from '../core/commands.js';
 import { store } from '../core/store.js';
@@ -219,13 +220,22 @@ async function switchBranch(): Promise<void> {
   if (branchList.length === 0) {
     await refresh();
   }
-  const local = branchList.filter((branch) => !branch.remote);
-  const names = local.map((branch) => (branch.current ? `${branch.name} (actual)` : branch.name));
-  const choice = window.prompt(`Ramas disponibles:\n${names.join('\n')}\n\nCambiar a:`);
-  if (choice === null || choice.trim() === '') {
+  // Un selector filtrable evita tener que teclear el nombre exacto.
+  const choice = await selectDialog({
+    title: 'Cambiar de rama',
+    placeholder: 'Filtrar ramas…',
+    emptyMessage: 'No hay ramas que coincidan.',
+    items: branchList.map((branch) => ({
+      id: branch.name,
+      label: branch.name,
+      ...(branch.remote ? { hint: 'remota' } : branch.upstream !== undefined ? { hint: branch.upstream } : {}),
+      ...(branch.current ? { current: true } : {}),
+    })),
+  });
+  if (choice === null) {
     return;
   }
-  const result = await window.forge.git.checkout(choice.trim());
+  const result = await window.forge.git.checkout(choice);
   if (!result.ok) {
     toastError('No se pudo cambiar de rama.', result.error);
     return;
@@ -235,16 +245,39 @@ async function switchBranch(): Promise<void> {
 }
 
 async function createBranch(): Promise<void> {
-  const name = window.prompt('Nombre de la nueva rama:');
-  if (name === null || name.trim() === '') {
+  const existing = new Set(branchList.map((branch) => branch.name));
+  const name = await promptDialog({
+    title: 'Nueva rama',
+    label: 'Nombre de la rama',
+    placeholder: 'feature/mi-cambio',
+    detail: 'Se crea a partir de la rama actual y se activa al momento.',
+    confirmLabel: 'Crear rama',
+    // Las mismas reglas que aplica el servicio, adelantadas al dialogo.
+    validate: (value) => {
+      if (value === '') {
+        return 'Escribe un nombre.';
+      }
+      if (value.startsWith('-')) {
+        return 'No puede empezar por "-".';
+      }
+      if (/[\s~^:?*[\\]/.test(value) || value.includes('..') || value.endsWith('.lock')) {
+        return 'Git no admite ese nombre de referencia.';
+      }
+      if (existing.has(value)) {
+        return 'Ya existe una rama con ese nombre.';
+      }
+      return null;
+    },
+  });
+  if (name === null) {
     return;
   }
-  const result = await window.forge.git.createBranch(name.trim());
+  const result = await window.forge.git.createBranch(name);
   if (!result.ok) {
     toastError('No se pudo crear la rama.', result.error);
     return;
   }
-  toast('info', `Rama "${name.trim()}" creada y activa.`);
+  toast('info', `Rama "${name}" creada y activa.`);
   await refresh();
 }
 
@@ -324,7 +357,17 @@ function changeRow(change: GitFileChange, kind: 'staged' | 'unstaged' | 'untrack
     discardButton.appendChild(svgIcon(ICONS.refresh, 12));
     discardButton.addEventListener('click', async (event) => {
       event.stopPropagation();
-      if (!window.confirm(`¿Descartar los cambios de "${change.path}"? No se puede deshacer.`)) {
+      const confirmed = await confirmDialog({
+        title: 'Descartar cambios',
+        message: `¿Descartar los cambios de "${change.path}"?`,
+        detail:
+          kind === 'untracked'
+            ? 'El archivo no tiene seguimiento, asi que se eliminara del disco.'
+            : 'Se perdera todo lo editado desde el ultimo commit.',
+        confirmLabel: 'Descartar',
+        danger: true,
+      });
+      if (!confirmed) {
         return;
       }
       const result = await window.forge.git.discard([change.path]);

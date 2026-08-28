@@ -21,6 +21,14 @@ export function mountTitleBar(mounts: ShellMounts): void {
     mounts.titlebarMenu.appendChild(button);
   }
 
+  const newProjectButton = h(
+    'button',
+    { class: 'chrome-btn', type: 'button', title: 'Generar un proyecto con DotForge' },
+  );
+  newProjectButton.append(svgIcon(ICONS.layers, 13), 'Nuevo proyecto');
+  newProjectButton.addEventListener('click', () => void runCommand('dotforge.newProject'));
+  mounts.titlebarActions.appendChild(newProjectButton);
+
   const paletteButton = h(
     'button',
     { class: 'chrome-btn', type: 'button', title: 'Paleta de comandos (Ctrl+Shift+P)' },

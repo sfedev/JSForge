@@ -6,7 +6,8 @@
  * proceso principal.
  */
 
-import { h, svgIcon } from '../core/dom.js';
+import { copyToClipboard, h, svgIcon } from '../core/dom.js';
+import { promptDialog } from '../core/dialogs.js';
 import { ICONS } from '../core/icons.js';
 import { defineCommands, runCommand } from '../core/commands.js';
 import { store, type AiConversationMessage } from '../core/store.js';
@@ -62,13 +63,32 @@ export function mountAiPanel(mounts: ShellMounts): void {
     h('span', {}, 'Forge AI'),
   );
   const headerActions = h('div', { style: 'display:flex;gap:2px' });
-  const clearButton = h('button', { class: 'icon-btn', type: 'button', title: 'Limpiar la conversacion' });
-  clearButton.appendChild(svgIcon(ICONS.close, 13));
-  clearButton.addEventListener('click', () => store.patch({ aiMessages: [] }));
+
   const keyButton = h('button', { class: 'icon-btn', type: 'button', title: 'Configurar la clave API' });
   keyButton.appendChild(svgIcon(ICONS.settings, 13));
   keyButton.addEventListener('click', () => void runCommand('ai.configureKey'));
-  headerActions.append(keyButton, clearButton);
+
+  // La papelera limpia la conversacion; la X cierra el panel. Antes ambas
+  // eran la misma aspa y la X no cerraba nada.
+  const clearButton = h('button', {
+    class: 'icon-btn',
+    type: 'button',
+    title: 'Limpiar la conversacion',
+    'aria-label': 'Limpiar la conversacion',
+  });
+  clearButton.appendChild(svgIcon(ICONS.trash, 13));
+  clearButton.addEventListener('click', () => store.patch({ aiMessages: [] }));
+
+  const closeButton = h('button', {
+    class: 'icon-btn',
+    type: 'button',
+    title: 'Cerrar el panel (Ctrl+Shift+I)',
+    'aria-label': 'Cerrar el panel de Forge AI',
+  });
+  closeButton.appendChild(svgIcon(ICONS.close, 13));
+  closeButton.addEventListener('click', () => store.patch({ auxVisible: false }));
+
+  headerActions.append(keyButton, clearButton, closeButton);
   header.appendChild(headerActions);
 
   providerSelect = h('select', { class: 'select', 'aria-label': 'Proveedor' }) as HTMLSelectElement;
@@ -158,18 +178,21 @@ export function mountAiPanel(mounts: ShellMounts): void {
       id: 'ai.inlineEdit',
       title: 'IA: editar en linea la seleccion',
       category: 'IA',
+      enabled: () => store.state.settings.aiEnabled,
       run: () => inlineEdit(),
     },
     {
       id: 'ai.configureKey',
       title: 'IA: configurar la clave API',
       category: 'IA',
+      enabled: () => store.state.settings.aiEnabled,
       run: () => configureKey(),
     },
     {
       id: 'ai.explainSelection',
       title: 'IA: explicar la seleccion',
       category: 'IA',
+      enabled: () => store.state.settings.aiEnabled,
       run: () => send('Explica que hace este codigo y por que.', 'explain'),
     },
   ]);
@@ -237,11 +260,20 @@ async function configureKey(): Promise<void> {
     );
     return;
   }
-  const key = window.prompt(`Clave API para ${info?.label ?? provider} (se cifra con el sistema operativo):`);
-  if (key === null || key.trim() === '') {
+  const key = await promptDialog({
+    title: `Clave API de ${info?.label ?? provider}`,
+    label: 'Clave',
+    secret: true,
+    placeholder: provider === 'anthropic' ? 'sk-ant-…' : 'sk-…',
+    detail:
+      'Se cifra con el almacen del sistema operativo y nunca sale del proceso principal.',
+    confirmLabel: 'Guardar',
+    validate: (value) => (value.length < 8 ? 'La clave parece demasiado corta.' : null),
+  });
+  if (key === null) {
     return;
   }
-  const result = await window.forge.ai.setKey(provider, key.trim());
+  const result = await window.forge.ai.setKey(provider, key);
   if (!result.ok) {
     toastError('No se pudo guardar la clave.', result.error);
     return;
@@ -311,6 +343,10 @@ function renderContextChips(): void {
 /* -------------------------------------------------------------------------- */
 
 async function send(prompt: string, preset: AiQuickAction, forcedRequestId?: string): Promise<void> {
+  if (!store.state.settings.aiEnabled) {
+    toast('info', 'Forge AI esta desactivado.', 'Puedes activarlo en las preferencias.');
+    return;
+  }
   if (store.state.aiBusyRequestId !== null) {
     toast('warn', 'Espera a que termine la respuesta en curso.');
     return;
@@ -402,9 +438,12 @@ function renderContent(content: string): DocumentFragment {
     pre.appendChild(h('code', {}, code));
 
     const copy = h('button', { class: 'btn btn--sm btn--ghost', type: 'button' }, 'Copiar');
-    copy.addEventListener('click', () => {
-      void navigator.clipboard.writeText(code);
-      toast('info', 'Codigo copiado al portapapeles.');
+    copy.addEventListener('click', async () => {
+      const copiado = await copyToClipboard(code);
+      toast(
+        copiado ? 'info' : 'warn',
+        copiado ? 'Codigo copiado al portapapeles.' : 'No se pudo copiar al portapapeles.',
+      );
     });
     fragment.append(pre, copy);
   });
@@ -474,6 +513,10 @@ interface MonacoRange {
 let pendingInlineEdit: PendingInlineEdit | null = null;
 
 async function inlineEdit(): Promise<void> {
+  if (!store.state.settings.aiEnabled) {
+    toast('info', 'Forge AI esta desactivado.', 'Puedes activarlo en las preferencias.');
+    return;
+  }
   const editor = getEditor();
   const selection = editor?.getSelection();
   const model = editor?.getModel();
@@ -485,8 +528,15 @@ async function inlineEdit(): Promise<void> {
     toast('warn', 'Selecciona el codigo que quieres refactorizar.');
     return;
   }
-  const instruction = window.prompt('¿Que cambio quieres aplicar a la seleccion?');
-  if (instruction === null || instruction.trim() === '') {
+  const instruction = await promptDialog({
+    title: 'Editar con Forge AI',
+    label: '¿Que cambio quieres aplicar?',
+    placeholder: 'Extrae esto a una funcion con nombre y anade tipos explicitos',
+    detail: `Se enviaran las lineas ${selection.startLineNumber}-${selection.endLineNumber} y el contexto del proyecto.`,
+    confirmLabel: 'Generar',
+    multiline: true,
+  });
+  if (instruction === null) {
     return;
   }
 

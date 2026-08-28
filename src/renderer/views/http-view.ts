@@ -7,7 +7,7 @@
  * cuerpo JSON reindentado.
  */
 
-import { h, svgIcon, formatBytes, formatDuration } from '../core/dom.js';
+import { copyToClipboard, h, svgIcon, formatBytes, formatDuration } from '../core/dom.js';
 import { ICONS } from '../core/icons.js';
 import { defineCommands, runCommand } from '../core/commands.js';
 import { findDocument, store } from '../core/store.js';
@@ -326,11 +326,15 @@ function mountPanel(context: PanelViewContext): void {
 
   const copyButton = h('button', { class: 'icon-btn', type: 'button', title: 'Copiar el cuerpo' });
   copyButton.appendChild(svgIcon(ICONS.copy, 13));
-  copyButton.addEventListener('click', () => {
-    if (lastResponse !== null) {
-      void navigator.clipboard.writeText(lastResponse.prettyBody ?? lastResponse.body);
-      toast('info', 'Cuerpo copiado al portapapeles.');
+  copyButton.addEventListener('click', async () => {
+    if (lastResponse === null) {
+      return;
     }
+    const copiado = await copyToClipboard(lastResponse.prettyBody ?? lastResponse.body);
+    toast(
+      copiado ? 'info' : 'warn',
+      copiado ? 'Cuerpo copiado al portapapeles.' : 'No se pudo copiar al portapapeles.',
+    );
   });
   context.actions.appendChild(copyButton);
 

@@ -8,6 +8,7 @@
 import { buildShell, type ShellMounts } from './shell.js';
 import { store } from './core/store.js';
 import { mountToasts, toast } from './core/toasts.js';
+import { mountDialogs } from './core/dialogs.js';
 import { query } from './core/dom.js';
 import { registerEventBridge } from './core/event-bridge.js';
 import { mountActivityBar } from './views/activity-bar.js';
@@ -47,6 +48,7 @@ async function boot(): Promise<void> {
 
   const mounts: ShellMounts = buildShell(root);
   mountToasts(mounts.toasts);
+  mountDialogs(mounts.overlays);
 
   registerCommands();
   registerEventBridge();

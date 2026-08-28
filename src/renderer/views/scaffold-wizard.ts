@@ -276,11 +276,14 @@ async function open(): Promise<void> {
   const pickButton = h('button', { class: 'btn btn--ghost btn--sm', type: 'button' });
   pickButton.append(svgIcon(ICONS.folder, 13), 'Elegir…');
   pickButton.addEventListener('click', async () => {
-    // Se reutiliza el selector de carpeta nativo del proceso principal.
-    const picked = await window.forge.workspace.pick();
+    // Selector puro: elegir el destino NO debe cambiar el proyecto abierto.
+    const picked = await window.forge.workspace.pickDirectory(
+      'Carpeta destino del proyecto nuevo',
+    );
     if (picked.ok && picked.value !== null) {
-      targetInput.value = picked.value.root;
-      store.patch({ workspace: picked.value });
+      targetInput.value = picked.value;
+      plan = null;
+      renderPlan();
     }
   });
 

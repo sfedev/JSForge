@@ -87,6 +87,8 @@ export const IPC = {
   WORKSPACE_CLOSE: 'forge:workspace/close',
   WORKSPACE_CURRENT: 'forge:workspace/current',
   WORKSPACE_RECENT: 'forge:workspace/recent',
+  /** Selector de carpeta puro: devuelve la ruta y no abre nada. */
+  DIALOG_PICK_DIRECTORY: 'forge:dialog/pick-directory',
 
   /* Sistema de archivos (siempre pasa por assertInsideWorkspace) */
   FS_READ_DIR: 'forge:fs/read-dir',
@@ -1100,6 +1102,8 @@ export interface ForgeSettings {
   readonly semanticHighlighting: boolean;
   readonly updateChannel: UpdateChannel;
   readonly autoInstallUpdates: boolean;
+  /** Si es false, Forge AI queda inhabilitado en toda la interfaz. */
+  readonly aiEnabled: boolean;
   readonly aiProvider: AiProviderId;
   readonly aiModel: string;
   readonly terminalProfile: string;
@@ -1119,6 +1123,7 @@ export const DEFAULT_SETTINGS: ForgeSettings = {
   semanticHighlighting: true,
   updateChannel: 'stable',
   autoInstallUpdates: false,
+  aiEnabled: true,
   aiProvider: 'anthropic',
   aiModel: 'claude-sonnet-4-5',
   terminalProfile: 'default',

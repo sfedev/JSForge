@@ -205,6 +205,20 @@ function open(): void {
 
   tooling.appendChild(h('div', { class: 'section__header', style: 'cursor:default' }, 'Forge AI'));
   tooling.appendChild(
+    toggleField(
+      'Activar Forge AI',
+      settings.aiEnabled,
+      (aiEnabled) => {
+        // Al desactivarla se cierra el panel, para que no quede abierto e inerte.
+        void update({ aiEnabled });
+        if (!aiEnabled) {
+          store.patch({ auxVisible: false });
+        }
+      },
+      'Al desactivarla, el boton de la barra queda inhabilitado y los atajos no responden.',
+    ),
+  );
+  tooling.appendChild(
     selectField(
       'Proveedor',
       settings.aiProvider,
@@ -218,7 +232,12 @@ function open(): void {
       (aiProvider) => void update({ aiProvider }),
     ),
   );
-  const keyButton = h('button', { class: 'btn btn--ghost btn--sm', type: 'button' }, 'Configurar la clave API…');
+  const keyButton = h('button', {
+    class: 'btn btn--ghost btn--sm',
+    type: 'button',
+    ...(settings.aiEnabled ? {} : { disabled: 'true' }),
+  }, 'Configurar la clave API…') as HTMLButtonElement;
+  keyButton.disabled = !settings.aiEnabled;
   keyButton.addEventListener('click', () => void runCommand('ai.configureKey'));
   tooling.appendChild(keyButton);
 
