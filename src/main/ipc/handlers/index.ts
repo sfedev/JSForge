@@ -7,6 +7,7 @@
 
 import { registerAiHandlers } from './ai-handlers.js';
 import { registerCoreHandlers } from './core-handlers.js';
+import { registerDebugHandlers } from './debug-handlers.js';
 import { registerDotForgeHandlers } from './dotforge-handlers.js';
 import { registerFsHandlers } from './fs-handlers.js';
 import { registerGitHandlers } from './git-handlers.js';
@@ -23,4 +24,5 @@ export function registerAllHandlers(): void {
   registerAiHandlers();
   registerTerminalHandlers();
   registerToolsHandlers();
+  registerDebugHandlers();
 }

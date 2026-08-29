@@ -191,6 +191,22 @@ export const IPC = {
   UPDATER_INSTALL: 'forge:updater/install',
   UPDATER_SET_CHANNEL: 'forge:updater/set-channel',
 
+  /* Depuracion CDP y perfilado de memoria */
+  DEBUG_ATTACH: 'forge:debug/attach',
+  DEBUG_DETACH: 'forge:debug/detach',
+  DEBUG_SESSIONS: 'forge:debug/sessions',
+  DEBUG_DISCOVER: 'forge:debug/discover',
+  DEBUG_SET_BREAKPOINTS: 'forge:debug/set-breakpoints',
+  DEBUG_RESUME: 'forge:debug/resume',
+  DEBUG_PAUSE: 'forge:debug/pause',
+  DEBUG_STEP: 'forge:debug/step',
+  DEBUG_EVALUATE: 'forge:debug/evaluate',
+  DEBUG_SCOPES: 'forge:debug/scopes',
+  DEBUG_PROPERTIES: 'forge:debug/properties',
+  DEBUG_HEAP_SUBSCRIBE: 'forge:debug/heap-subscribe',
+  DEBUG_HEAP_TREND: 'forge:debug/heap-trend',
+  DEBUG_COLLECT_GARBAGE: 'forge:debug/collect-garbage',
+
   /* Preferencias */
   SETTINGS_GET: 'forge:settings/get',
   SETTINGS_SET: 'forge:settings/set',
@@ -1135,6 +1151,140 @@ export const DEFAULT_SETTINGS: ForgeSettings = {
 /*  Eventos main -> renderer                                                   */
 /* -------------------------------------------------------------------------- */
 
+/* -------------------------------------------------------------------------- */
+/*  Depuracion CDP y perfilado de memoria                                      */
+/* -------------------------------------------------------------------------- */
+
+export type DebugSessionStatus =
+  | 'connecting'
+  | 'attached'
+  | 'paused'
+  | 'detached'
+  | 'failed';
+
+/** Objetivo anunciado por el inspector de Node en `/json/list`. */
+export interface DebugTarget {
+  readonly id: string;
+  readonly title: string;
+  readonly url: string;
+  readonly webSocketDebuggerUrl: string;
+}
+
+export interface DebugAttachRequest {
+  /** Identificador estable elegido por el renderer. */
+  readonly sessionId: string;
+  readonly host?: string;
+  readonly port: number;
+  readonly label?: string;
+  /** Proceso del gestor al que pertenece el inspector, si se conoce. */
+  readonly processId?: string;
+}
+
+export interface DebugSessionInfo {
+  readonly id: string;
+  readonly label: string;
+  readonly host: string;
+  readonly port: number;
+  readonly status: DebugSessionStatus;
+  readonly processId?: string;
+  readonly attachedAt?: number;
+  readonly pauseReason?: string;
+  /** Motivo del fallo cuando `status` es `failed`; nunca lleva secretos. */
+  readonly detail?: string;
+}
+
+/** Punto de interrupcion tal y como lo pide el renderer (linea 1-based). */
+export interface SourceBreakpoint {
+  readonly line: number;
+  readonly condition?: string;
+}
+
+export interface BreakpointState {
+  /** Ruta relativa al workspace. */
+  readonly path: string;
+  readonly line: number;
+  /** true si el motor lo acepto y lo asocio a una posicion real. */
+  readonly verified: boolean;
+  readonly condition?: string;
+  /** Linea real donde quedo anclado, si el motor lo desplazo. */
+  readonly resolvedLine?: number;
+}
+
+export interface DebugCallFrameView {
+  readonly id: string;
+  readonly functionName: string;
+  readonly url: string;
+  /** Ruta relativa al workspace cuando se pudo resolver. */
+  readonly path: string | null;
+  readonly line: number;
+  readonly column: number;
+  readonly inWorkspace: boolean;
+}
+
+export interface DebugVariableView {
+  readonly name: string;
+  readonly value: string;
+  readonly type: string;
+  /** Referencia para expandir el objeto; se invalida al reanudar. */
+  readonly objectId?: string;
+  readonly expandable: boolean;
+}
+
+export interface DebugScopeView {
+  readonly type: string;
+  readonly name?: string;
+  readonly objectId?: string;
+  readonly variables: readonly DebugVariableView[];
+}
+
+export interface DebugPauseEvent {
+  readonly sessionId: string;
+  readonly reason: string;
+  readonly frames: readonly DebugCallFrameView[];
+  readonly hitBreakpoints: readonly string[];
+}
+
+export type DebugStepKind = 'over' | 'into' | 'out';
+
+export interface DebugEvaluateRequest {
+  readonly sessionId: string;
+  readonly expression: string;
+  /** Evalua en el marco indicado; sin el, en el contexto global. */
+  readonly callFrameId?: string;
+}
+
+export interface DebugEvaluateResult {
+  readonly value: string;
+  readonly type: string;
+  readonly objectId?: string;
+  readonly expandable: boolean;
+  /** true si la expresion lanzo: el valor lleva el mensaje del error. */
+  readonly thrown: boolean;
+}
+
+export interface DebugConsoleEvent {
+  readonly sessionId: string;
+  readonly level: LogLevel;
+  readonly text: string;
+  readonly time: number;
+}
+
+export interface HeapSample {
+  readonly sessionId: string;
+  readonly time: number;
+  readonly usedHeapMb: number;
+  readonly totalHeapMb: number;
+}
+
+export interface HeapTrend {
+  readonly sessionId: string;
+  readonly samples: readonly HeapSample[];
+  /** Pendiente por minimos cuadrados, en MB/min. */
+  readonly slopeMbPerMinute: number;
+  /** Crecimiento sostenido sin recuperacion: posible fuga. */
+  readonly leakSuspected: boolean;
+}
+
 export type ForgeEvent =
   | { readonly type: 'window/state'; readonly payload: WindowState }
   | { readonly type: 'workspace/changed'; readonly payload: WorkspaceInfo | null }
@@ -1155,6 +1305,21 @@ export type ForgeEvent =
       readonly payload: { readonly id: string; readonly exitCode: number };
     }
   | { readonly type: 'metrics/sample'; readonly payload: MetricsSnapshot }
+  | { readonly type: 'debug/session'; readonly payload: DebugSessionInfo }
+  | { readonly type: 'debug/paused'; readonly payload: DebugPauseEvent }
+  | {
+      readonly type: 'debug/resumed';
+      readonly payload: { readonly sessionId: string };
+    }
+  | {
+      readonly type: 'debug/breakpoints';
+      readonly payload: {
+        readonly sessionId: string;
+        readonly breakpoints: readonly BreakpointState[];
+      };
+    }
+  | { readonly type: 'debug/console'; readonly payload: DebugConsoleEvent }
+  | { readonly type: 'debug/heap'; readonly payload: HeapSample }
   | { readonly type: 'updater/state'; readonly payload: UpdaterState }
   | { readonly type: 'docker/changed'; readonly payload: readonly ContainerInfo[] }
   | {

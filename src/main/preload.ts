@@ -19,6 +19,9 @@ import {
   forgeError,
   type AiChatRequest,
   type AiProviderId,
+  type DebugAttachRequest,
+  type DebugEvaluateRequest,
+  type DebugStepKind,
   type ForgeEvent,
   type ForgeSettings,
   type FormatRequest,
@@ -33,6 +36,7 @@ import {
   type PtyCreateRequest,
   type Result,
   type SearchRequest,
+  type SourceBreakpoint,
   type StartProcessRequest,
   type UpdateChannel,
   type WriteFileRequest,
@@ -225,6 +229,26 @@ const api: ForgeApi = {
     download: () => call(IPC.UPDATER_DOWNLOAD),
     install: (restartNow: boolean) => call(IPC.UPDATER_INSTALL, restartNow),
     setChannel: (channel: UpdateChannel) => call(IPC.UPDATER_SET_CHANNEL, channel),
+  },
+
+  debug: {
+    discover: (host: string, port: number) => call(IPC.DEBUG_DISCOVER, host, port),
+    attach: (request: DebugAttachRequest) => call(IPC.DEBUG_ATTACH, request),
+    detach: (sessionId: string) => call(IPC.DEBUG_DETACH, sessionId),
+    sessions: () => call(IPC.DEBUG_SESSIONS),
+    setBreakpoints: (sessionId: string, relativePath: string, points: readonly SourceBreakpoint[]) =>
+      call(IPC.DEBUG_SET_BREAKPOINTS, sessionId, relativePath, points),
+    resume: (sessionId: string) => call(IPC.DEBUG_RESUME, sessionId),
+    pause: (sessionId: string) => call(IPC.DEBUG_PAUSE, sessionId),
+    step: (sessionId: string, kind: DebugStepKind) => call(IPC.DEBUG_STEP, sessionId, kind),
+    evaluate: (request: DebugEvaluateRequest) => call(IPC.DEBUG_EVALUATE, request),
+    scopes: (sessionId: string, frameId: string) => call(IPC.DEBUG_SCOPES, sessionId, frameId),
+    properties: (sessionId: string, objectId: string) =>
+      call(IPC.DEBUG_PROPERTIES, sessionId, objectId),
+    subscribeHeap: (sessionId: string, enabled: boolean) =>
+      call(IPC.DEBUG_HEAP_SUBSCRIBE, sessionId, enabled),
+    heapTrend: (sessionId: string) => call(IPC.DEBUG_HEAP_TREND, sessionId),
+    collectGarbage: (sessionId: string) => call(IPC.DEBUG_COLLECT_GARBAGE, sessionId),
   },
 
   settings: {

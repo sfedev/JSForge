@@ -7,7 +7,16 @@
  */
 
 import type { ForgeEvent } from '../../shared/contracts.js';
-import { appendLogs, pushMetrics, store, upsertProcess } from './store.js';
+import {
+  appendLogs,
+  applyBreakpointVerification,
+  pushDebugConsole,
+  pushHeapSample,
+  pushMetrics,
+  store,
+  upsertDebugSession,
+  upsertProcess,
+} from './store.js';
 import { toast } from './toasts.js';
 import { runCommand } from './commands.js';
 
@@ -79,6 +88,36 @@ export function registerEventBridge(): () => void {
 
       case 'updater/state':
         store.patch({ updater: event.payload });
+        break;
+
+      case 'debug/session':
+        upsertDebugSession(event.payload);
+        break;
+
+      case 'debug/paused':
+        store.patch({
+          debugFrames: [...event.payload.frames],
+          // Se selecciona el marco superior, que es donde mira el usuario.
+          activeDebugFrame: event.payload.frames[0]?.id ?? null,
+        });
+        void runCommand('debug.handlePaused', event.payload);
+        break;
+
+      case 'debug/resumed':
+        store.patch({ debugFrames: [], activeDebugFrame: null });
+        void runCommand('debug.handleResumed', event.payload);
+        break;
+
+      case 'debug/breakpoints':
+        applyBreakpointVerification(event.payload.breakpoints);
+        break;
+
+      case 'debug/console':
+        pushDebugConsole(event.payload);
+        break;
+
+      case 'debug/heap':
+        pushHeapSample(event.payload);
         break;
 
       case 'docker/changed':

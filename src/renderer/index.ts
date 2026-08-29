@@ -34,6 +34,7 @@ import { registerUpdaterView } from './views/updater-view.js';
 import { registerScaffoldWizard } from './views/scaffold-wizard.js';
 import { registerSettingsView } from './views/settings-view.js';
 import { registerProblemsView } from './views/problems-view.js';
+import { registerDebugView } from './views/debug-view.js';
 import { registerLspBridge } from './lsp/lsp-bridge.js';
 
 async function boot(): Promise<void> {
@@ -65,6 +66,7 @@ async function boot(): Promise<void> {
   registerServicesView();
   registerMetricsView();
   registerProblemsView();
+  registerDebugView();
 
   mountTitleBar(mounts);
   mountActivityBar(mounts);

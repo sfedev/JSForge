@@ -1020,3 +1020,36 @@
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
 }
+
+/* -------------------------------------------------------------------------- */
+/*  Depuracion: margen de Monaco                                               */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * Monaco pinta el simbolo del margen aplicando la clase a un elemento vacio
+ * de tamano fijo, asi que el circulo se dibuja con `::after` centrado.
+ */
+.forge-breakpoint::after {
+  content: '';
+  display: block;
+  width: 10px;
+  height: 10px;
+  margin: 4px auto 0;
+  border-radius: var(--radius-full);
+  background: var(--state-error);
+}
+
+/*
+ * Punto sin verificar: el motor no lo acepto todavia (no hay sesion, o el
+ * script aun no se ha cargado). Se dibuja hueco para que la diferencia se
+ * vea sin tener que pasar el raton por encima.
+ */
+.forge-breakpoint--unverified::after {
+  background: transparent;
+  border: 1.5px solid var(--text-subtle);
+}
+
+.forge-debug-current-line {
+  background: var(--state-warning-soft);
+  border-left: 2px solid var(--state-warning);
+}

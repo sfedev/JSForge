@@ -12,9 +12,18 @@ import type {
   AiProviderInfo,
   AppInfo,
   Blueprint,
+  BreakpointState,
   ComposeFileView,
   ContainerInfo,
   DbSchemaView,
+  DebugAttachRequest,
+  DebugEvaluateRequest,
+  DebugEvaluateResult,
+  DebugScopeView,
+  DebugSessionInfo,
+  DebugStepKind,
+  DebugTarget,
+  DebugVariableView,
   DirEntry,
   DotForgeConfig,
   DotForgeManifest,
@@ -32,6 +41,7 @@ import type {
   GitDiffRequest,
   GitLogEntry,
   GitStatus,
+  HeapTrend,
   HttpEndpointLens,
   HttpRequestSpec,
   HttpResponseView,
@@ -50,6 +60,7 @@ import type {
   ScriptEntry,
   SearchRequest,
   SearchResult,
+  SourceBreakpoint,
   StartProcessRequest,
   ToolchainInfo,
   UpdateChannel,
@@ -215,6 +226,30 @@ export interface ForgeUpdaterApi {
   setChannel(channel: UpdateChannel): Promise<Result<UpdaterState>>;
 }
 
+export interface ForgeDebugApi {
+  /** Sondea `/json/list` sin abrir sesion; sirve para descubrir el puerto. */
+  discover(host: string, port: number): Promise<Result<readonly DebugTarget[]>>;
+  attach(request: DebugAttachRequest): Promise<Result<DebugSessionInfo>>;
+  detach(sessionId: string): Promise<Result<true>>;
+  sessions(): Promise<Result<readonly DebugSessionInfo[]>>;
+  /** Reemplaza en bloque los puntos de interrupcion de un archivo. */
+  setBreakpoints(
+    sessionId: string,
+    relativePath: string,
+    points: readonly SourceBreakpoint[],
+  ): Promise<Result<readonly BreakpointState[]>>;
+  resume(sessionId: string): Promise<Result<true>>;
+  pause(sessionId: string): Promise<Result<true>>;
+  step(sessionId: string, kind: DebugStepKind): Promise<Result<true>>;
+  evaluate(request: DebugEvaluateRequest): Promise<Result<DebugEvaluateResult>>;
+  scopes(sessionId: string, frameId: string): Promise<Result<readonly DebugScopeView[]>>;
+  properties(sessionId: string, objectId: string): Promise<Result<readonly DebugVariableView[]>>;
+  /** El muestreo llega por eventos `debug/heap`. */
+  subscribeHeap(sessionId: string, enabled: boolean): Promise<Result<true>>;
+  heapTrend(sessionId: string): Promise<Result<HeapTrend>>;
+  collectGarbage(sessionId: string): Promise<Result<true>>;
+}
+
 export interface ForgeSettingsApi {
   get(): Promise<Result<ForgeSettings>>;
   set(patch: Partial<ForgeSettings>): Promise<Result<ForgeSettings>>;
@@ -240,6 +275,7 @@ export interface ForgeApi {
   readonly docker: ForgeDockerApi;
   readonly db: ForgeDbApi;
   readonly metrics: ForgeMetricsApi;
+  readonly debug: ForgeDebugApi;
   readonly updater: ForgeUpdaterApi;
   readonly settings: ForgeSettingsApi;
   /** Suscripcion al flujo unico de eventos main -> renderer. */

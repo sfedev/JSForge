@@ -25,6 +25,7 @@ import { stopAllServers } from './services/lsp/lsp-manager.js';
 import { cancelAllChats } from './services/ai/ai-service.js';
 import { disposeAllSessions } from './services/terminal/pty-service.js';
 import { disposeMetrics } from './services/metrics/metrics-service.js';
+import { disposeAllSessions as disposeDebugSessions } from './debugger/debug-session.js';
 import { cancelAllRequests } from './services/http/http-client.js';
 import { initializeUpdater } from './services/updater/updater-service.js';
 import { createMainWindow, getMainWindow } from './window.js';
@@ -129,6 +130,7 @@ function shutdown(): void {
     cancelAllChats();
     disposeAllSessions();
     disposeMetrics();
+    disposeDebugSessions();
     cancelAllRequests();
     closeWorkspace();
   } catch (cause) {

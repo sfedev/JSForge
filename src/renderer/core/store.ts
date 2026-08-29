@@ -8,7 +8,12 @@
 
 import type {
   AiProviderInfo,
+  BreakpointState,
+  DebugCallFrameView,
+  DebugConsoleEvent,
+  DebugSessionInfo,
   DotForgeManifest,
+  HeapSample,
   ForgeSettings,
   GitStatus,
   LogRecord,
@@ -44,9 +49,10 @@ export type SidebarView =
   | 'pipelines'
   | 'services'
   | 'http'
-  | 'metrics';
+  | 'metrics'
+  | 'debug';
 
-export type PanelView = 'output' | 'terminal' | 'problems' | 'http' | 'metrics';
+export type PanelView = 'output' | 'terminal' | 'problems' | 'http' | 'metrics' | 'debug';
 
 export interface AiConversationMessage {
   readonly id: string;
@@ -86,6 +92,22 @@ export interface ForgeState {
   aiProviders: AiProviderInfo[];
   aiMessages: AiConversationMessage[];
   aiBusyRequestId: string | null;
+
+  /**
+   * Puntos de interrupcion por ruta relativa.
+   *
+   * Los posee el renderer, no la sesion: se pueden marcar sin estar
+   * depurando y se empujan al motor en cuanto hay sesion. Es lo que permite
+   * poner un punto, arrancar el proceso y que pare a la primera.
+   */
+  breakpoints: Map<string, BreakpointState[]>;
+  debugSessions: DebugSessionInfo[];
+  activeDebugSession: string | null;
+  debugFrames: DebugCallFrameView[];
+  activeDebugFrame: string | null;
+  debugConsole: DebugConsoleEvent[];
+  /** Muestras de heap por sesion, para la grafica de fugas. */
+  heapSamples: Map<string, HeapSample[]>;
 }
 
 export type StateKey = keyof ForgeState;
@@ -124,6 +146,14 @@ function initialState(): ForgeState {
     aiProviders: [],
     aiMessages: [],
     aiBusyRequestId: null,
+
+    breakpoints: new Map(),
+    debugSessions: [],
+    activeDebugSession: null,
+    debugFrames: [],
+    activeDebugFrame: null,
+    debugConsole: [],
+    heapSamples: new Map(),
   };
 }
 
@@ -273,4 +303,125 @@ export function pushMetrics(sample: MetricsSnapshot): void {
 
 export function findDocument(path: string): OpenDocument | undefined {
   return store.state.documents.find((document) => document.path === path);
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Depuracion                                                                 */
+/* -------------------------------------------------------------------------- */
+
+/** Anillo de la consola de depuracion: acotado igual que el de logs. */
+const MAX_DEBUG_CONSOLE = 2000;
+
+/** Ventana de muestras de heap conservada por sesion (10 min a 2 s). */
+const MAX_HEAP_SAMPLES = 300;
+
+export function upsertDebugSession(info: DebugSessionInfo): void {
+  store.mutate(['debugSessions', 'activeDebugSession'], (state) => {
+    const index = state.debugSessions.findIndex((entry) => entry.id === info.id);
+    if (info.status === 'detached') {
+      if (index !== -1) {
+        state.debugSessions.splice(index, 1);
+      }
+      if (state.activeDebugSession === info.id) {
+        state.activeDebugSession = state.debugSessions[0]?.id ?? null;
+      }
+      return;
+    }
+    if (index === -1) {
+      state.debugSessions.push(info);
+    } else {
+      state.debugSessions[index] = info;
+    }
+    if (state.activeDebugSession === null) {
+      state.activeDebugSession = info.id;
+    }
+  });
+}
+
+export function pushDebugConsole(entry: DebugConsoleEvent): void {
+  store.mutate(['debugConsole'], (state) => {
+    state.debugConsole.push(entry);
+    if (state.debugConsole.length > MAX_DEBUG_CONSOLE) {
+      state.debugConsole.splice(0, state.debugConsole.length - MAX_DEBUG_CONSOLE);
+    }
+  });
+}
+
+export function pushHeapSample(sample: HeapSample): void {
+  store.mutate(['heapSamples'], (state) => {
+    let series = state.heapSamples.get(sample.sessionId);
+    if (series === undefined) {
+      series = [];
+      state.heapSamples.set(sample.sessionId, series);
+    }
+    series.push(sample);
+    if (series.length > MAX_HEAP_SAMPLES) {
+      series.splice(0, series.length - MAX_HEAP_SAMPLES);
+    }
+  });
+}
+
+export function breakpointsFor(path: string): readonly BreakpointState[] {
+  return store.state.breakpoints.get(path) ?? [];
+}
+
+/**
+ * Alterna el punto de una linea y devuelve el juego resultante del archivo.
+ *
+ * Devolver el estado final (y no solo mutar) es lo que permite al llamante
+ * empujarlo al motor sin volver a leer el store, que aun no ha notificado.
+ */
+export function toggleBreakpoint(path: string, line: number): readonly BreakpointState[] {
+  const current = [...(store.state.breakpoints.get(path) ?? [])];
+  const index = current.findIndex((entry) => entry.line === line);
+  if (index === -1) {
+    current.push({ path, line, verified: false });
+    current.sort((a, b) => a.line - b.line);
+  } else {
+    current.splice(index, 1);
+  }
+  setBreakpointsFor(path, current);
+  return current;
+}
+
+export function setBreakpointsFor(path: string, points: readonly BreakpointState[]): void {
+  store.mutate(['breakpoints'], (state) => {
+    if (points.length === 0) {
+      state.breakpoints.delete(path);
+    } else {
+      state.breakpoints.set(path, [...points]);
+    }
+  });
+}
+
+/**
+ * Aplica el estado de verificacion que devuelve el motor.
+ *
+ * Solo toca `verified`: la lista de lineas la manda el editor, y machacarla
+ * con la respuesta del motor haria desaparecer los puntos de archivos que
+ * esa sesion todavia no ha cargado.
+ */
+export function applyBreakpointVerification(states: readonly BreakpointState[]): void {
+  const byPath = new Map<string, Set<number>>();
+  for (const state of states) {
+    if (!state.verified) {
+      continue;
+    }
+    let lines = byPath.get(state.path);
+    if (lines === undefined) {
+      lines = new Set();
+      byPath.set(state.path, lines);
+    }
+    lines.add(state.line);
+  }
+
+  store.mutate(['breakpoints'], (state) => {
+    for (const [path, points] of state.breakpoints) {
+      const verifiedLines = byPath.get(path);
+      state.breakpoints.set(
+        path,
+        points.map((point) => ({ ...point, verified: verifiedLines?.has(point.line) === true })),
+      );
+    }
+  });
 }

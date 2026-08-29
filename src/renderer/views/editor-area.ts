@@ -13,11 +13,16 @@ import { h, svgIcon } from '../core/dom.js';
 import { confirmDialog } from '../core/dialogs.js';
 import { ICONS } from '../core/icons.js';
 import { defineCommands, runCommand } from '../core/commands.js';
-import { findDocument, store, type OpenDocument } from '../core/store.js';
+import { findDocument, store, toggleBreakpoint, type OpenDocument } from '../core/store.js';
 import { toast, toastError } from '../core/toasts.js';
 import { setCursorStatus } from './status-bar.js';
 import { applyMonacoTheme, setupMonaco } from '../monaco/setup.js';
 import { isBinaryPath, languageForPath } from '../monaco/languages.js';
+import {
+  disposeBreakpointsFor,
+  mountBreakpoints,
+  notifyBreakpointToggle,
+} from '../editor/breakpoints.js';
 import type { ShellMounts } from '../shell.js';
 
 const MODEL_SCHEME = 'forge';
@@ -134,6 +139,9 @@ export function mountEditorArea(mounts: ShellMounts): void {
     void runCommand('ai.inlineEdit');
   });
 
+  // El margen de puntos de interrupcion necesita el editor ya creado.
+  mountBreakpoints(monaco, editor);
+
   renderTabs(mounts);
   store.subscribe(['documents', 'activeDocument', 'workspace'], () => renderTabs(mounts));
   store.subscribe(['settings'], applySettings);
@@ -194,6 +202,22 @@ export function mountEditorArea(mounts: ShellMounts): void {
       title: 'Formatear el documento',
       category: 'Editor',
       run: () => formatActive(),
+    },
+    {
+      id: 'editor.toggleBreakpointAtCursor',
+      title: 'Alternar el punto de interrupcion en el cursor',
+      category: 'Depuracion',
+      enabled: () => store.state.activeDocument !== null,
+      run: () => {
+        const active = store.state.activeDocument;
+        const line = editor?.getPosition()?.lineNumber;
+        const document = active === null ? undefined : findDocument(active);
+        // Las pestanas de diferencias no corresponden a un archivo real.
+        if (active === null || line === undefined || document?.kind !== 'file') {
+          return;
+        }
+        notifyBreakpointToggle(active, toggleBreakpoint(active, line));
+      },
     },
     {
       id: 'editor.revealLine',
@@ -515,6 +539,7 @@ export async function closeDocument(pathOrKey: string): Promise<void> {
     monaco.editor.getModel(diffUri(target, 'modified'))?.dispose();
   }
   viewStates.delete(pathOrKey);
+  disposeBreakpointsFor(document.path);
 
   store.mutate(['documents', 'activeDocument'], (state) => {
     const index = state.documents.findIndex((entry) => entry.path === pathOrKey);
