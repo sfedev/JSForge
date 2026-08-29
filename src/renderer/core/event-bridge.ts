@@ -120,6 +120,20 @@ export function registerEventBridge(): () => void {
         pushHeapSample(event.payload);
         break;
 
+      case 'test/started':
+        store.patch({ testRunning: event.payload.runId });
+        break;
+
+      case 'test/finished':
+        store.patch({ testRun: event.payload, testRunning: null });
+        void runCommand('testing.handleResults', event.payload);
+        break;
+
+      case 'test/coverage':
+        store.patch({ coverage: event.payload });
+        void runCommand('testing.handleCoverage', event.payload);
+        break;
+
       case 'docker/changed':
         void runCommand('services.handleContainers', event.payload);
         break;

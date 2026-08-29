@@ -14,6 +14,7 @@ import { registerGitHandlers } from './git-handlers.js';
 import { registerLspHandlers } from './lsp-handlers.js';
 import { registerSpecHandlers } from './spec-handlers.js';
 import { registerTerminalHandlers } from './terminal-handlers.js';
+import { registerTestHandlers } from './test-handlers.js';
 import { registerToolsHandlers } from './tools-handlers.js';
 
 export function registerAllHandlers(): void {
@@ -27,4 +28,5 @@ export function registerAllHandlers(): void {
   registerToolsHandlers();
   registerDebugHandlers();
   registerSpecHandlers();
+  registerTestHandlers();
 }

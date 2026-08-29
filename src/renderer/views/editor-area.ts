@@ -23,6 +23,7 @@ import {
   mountBreakpoints,
   notifyBreakpointToggle,
 } from '../editor/breakpoints.js';
+import { disposeTestLensFor, mountTestLens } from '../editor/test-lens.js';
 import type { ShellMounts } from '../shell.js';
 
 const MODEL_SCHEME = 'forge';
@@ -141,6 +142,8 @@ export function mountEditorArea(mounts: ShellMounts): void {
 
   // El margen de puntos de interrupcion necesita el editor ya creado.
   mountBreakpoints(monaco, editor);
+  // El code lens de pruebas y el margen de cobertura, sobre el mismo editor.
+  mountTestLens(monaco, editor);
 
   renderTabs(mounts);
   store.subscribe(['documents', 'activeDocument', 'workspace'], () => renderTabs(mounts));
@@ -540,6 +543,7 @@ export async function closeDocument(pathOrKey: string): Promise<void> {
   }
   viewStates.delete(pathOrKey);
   disposeBreakpointsFor(document.path);
+  disposeTestLensFor(modelUri(document.path).toString());
 
   store.mutate(['documents', 'activeDocument'], (state) => {
     const index = state.documents.findIndex((entry) => entry.path === pathOrKey);

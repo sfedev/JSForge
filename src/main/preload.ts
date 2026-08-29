@@ -38,6 +38,7 @@ import {
   type SearchRequest,
   type SourceBreakpoint,
   type SpecGenerateRequest,
+  type TestRunRequest,
   type StartProcessRequest,
   type UpdateChannel,
   type WriteFileRequest,
@@ -259,6 +260,17 @@ const api: ForgeApi = {
     auditTargets: () => call(IPC.SPEC_AUDIT_TARGETS),
     audit: (relativePath: string, revision?: string) =>
       call(IPC.SPEC_AUDIT, relativePath, revision ?? null),
+  },
+
+  testing: {
+    discover: () => call(IPC.TEST_DISCOVER),
+    blocks: (relativePath: string, content?: string) =>
+      call(IPC.TEST_BLOCKS, relativePath, content ?? null),
+    runners: () => call(IPC.TEST_RUNNERS),
+    run: (request: TestRunRequest) => call(IPC.TEST_RUN, request),
+    cancel: (runId: string) => call(IPC.TEST_CANCEL, runId),
+    lastRun: () => call(IPC.TEST_LAST_RUN),
+    coverage: () => call(IPC.TEST_COVERAGE),
   },
 
   settings: {

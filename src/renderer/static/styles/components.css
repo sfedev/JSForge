@@ -1053,3 +1053,26 @@
   background: var(--state-warning-soft);
   border-left: 2px solid var(--state-warning);
 }
+
+/* -------------------------------------------------------------------------- */
+/*  Pruebas: cobertura en el margen                                            */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * La marca va en el margen del numero de linea y no sobre el codigo: tenir
+ * la linea entera compite con el resaltado de sintaxis y hace ilegible lo
+ * que precisamente se esta intentando revisar.
+ */
+.forge-covered,
+.forge-uncovered {
+  width: 3px !important;
+  margin-left: 3px;
+}
+
+.forge-covered {
+  background: var(--state-success);
+}
+
+.forge-uncovered {
+  background: var(--state-error);
+}

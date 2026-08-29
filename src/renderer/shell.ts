@@ -52,6 +52,7 @@ export const ACTIVITY_ITEMS: readonly ActivityItem[] = [
   { id: 'metrics', label: 'Metricas', icon: 'metrics' },
   { id: 'debug', label: 'Depuracion', icon: 'debug', shortcut: 'Ctrl+Shift+D' },
   { id: 'spec', label: 'Contratos y API', icon: 'contract' },
+  { id: 'testing', label: 'Pruebas', icon: 'flask', shortcut: 'Ctrl+Shift+T' },
 ];
 
 export const PANEL_ITEMS: readonly { id: PanelView; label: string }[] = [
@@ -62,6 +63,7 @@ export const PANEL_ITEMS: readonly { id: PanelView; label: string }[] = [
   { id: 'metrics', label: 'Metricas' },
   { id: 'debug', label: 'Depuracion' },
   { id: 'spec', label: 'Contratos' },
+  { id: 'testing', label: 'Pruebas' },
 ];
 
 function iconButton(

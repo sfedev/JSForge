@@ -214,6 +214,15 @@ export const IPC = {
   SPEC_AUDIT: 'forge:spec/audit',
   SPEC_AUDIT_TARGETS: 'forge:spec/audit-targets',
 
+  /* Pruebas y cobertura */
+  TEST_DISCOVER: 'forge:test/discover',
+  TEST_BLOCKS: 'forge:test/blocks',
+  TEST_RUNNERS: 'forge:test/runners',
+  TEST_RUN: 'forge:test/run',
+  TEST_CANCEL: 'forge:test/cancel',
+  TEST_LAST_RUN: 'forge:test/last-run',
+  TEST_COVERAGE: 'forge:test/coverage',
+
   /* Preferencias */
   SETTINGS_GET: 'forge:settings/get',
   SETTINGS_SET: 'forge:settings/set',
@@ -1426,6 +1435,104 @@ export interface ContractAuditReport {
   readonly dependents: readonly ContractDependent[];
 }
 
+/* -------------------------------------------------------------------------- */
+/*  Pruebas y cobertura                                                        */
+/* -------------------------------------------------------------------------- */
+
+export type TestRunnerId = 'vitest' | 'jest' | 'playwright' | 'node';
+
+export type TestStatus = 'passed' | 'failed' | 'skipped' | 'running' | 'pending';
+
+export type TestBlockKind = 'suite' | 'case';
+
+export type TestModifier =
+  | 'none'
+  | 'only'
+  | 'skip'
+  | 'todo'
+  | 'each'
+  | 'failing'
+  | 'concurrent';
+
+/** Bloque `describe`/`it` localizado en el archivo, para el code lens. */
+export interface TestBlock {
+  readonly id: string;
+  readonly kind: TestBlockKind;
+  readonly name: string;
+  /** Nombre con los `describe` que lo envuelven; es lo que filtra `-t`. */
+  readonly fullName: string;
+  readonly path: string;
+  readonly line: number;
+  readonly column: number;
+  readonly modifier: TestModifier;
+  readonly children: readonly TestBlock[];
+}
+
+export interface TestRunRequest {
+  /** Identificador de la ejecucion, elegido por el renderer. */
+  readonly runId: string;
+  readonly runner?: TestRunnerId;
+  /** Limita la ejecucion a un archivo. */
+  readonly path?: string;
+  /** Filtra por nombre completo de prueba. */
+  readonly testName?: string;
+  readonly coverage?: boolean;
+}
+
+export interface TestCaseResult {
+  readonly id: string;
+  readonly name: string;
+  readonly fullName: string;
+  readonly path: string;
+  readonly status: TestStatus;
+  readonly durationMs: number;
+  readonly message?: string;
+  /** Archivo y linea del fallo, ya resueltos al workspace. */
+  readonly failurePath?: string;
+  readonly failureLine?: number;
+}
+
+export interface TestFileResult {
+  readonly path: string;
+  readonly status: TestStatus;
+  readonly durationMs: number;
+  readonly cases: readonly TestCaseResult[];
+}
+
+export interface TestRunSummary {
+  readonly runId: string;
+  readonly runner: TestRunnerId;
+  readonly status: TestStatus;
+  readonly total: number;
+  readonly passed: number;
+  readonly failed: number;
+  readonly skipped: number;
+  readonly durationMs: number;
+  readonly files: readonly TestFileResult[];
+  readonly startedAt: number;
+  readonly endedAt: number;
+}
+
+export interface FileCoverage {
+  readonly path: string;
+  readonly coveredLines: readonly number[];
+  readonly uncoveredLines: readonly number[];
+  readonly statementsCovered: number;
+  readonly statementsTotal: number;
+  readonly branchesCovered: number;
+  readonly branchesTotal: number;
+  readonly percent: number;
+}
+
+export interface CoverageReport {
+  readonly files: readonly FileCoverage[];
+  /** Porcentaje sobre el total de sentencias, no media de porcentajes. */
+  readonly percent: number;
+  readonly statementsCovered: number;
+  readonly statementsTotal: number;
+  readonly generatedAt: number;
+}
+
 export type ForgeEvent =
   | { readonly type: 'window/state'; readonly payload: WindowState }
   | { readonly type: 'workspace/changed'; readonly payload: WorkspaceInfo | null }
@@ -1461,6 +1568,16 @@ export type ForgeEvent =
     }
   | { readonly type: 'debug/console'; readonly payload: DebugConsoleEvent }
   | { readonly type: 'debug/heap'; readonly payload: HeapSample }
+  | {
+      readonly type: 'test/started';
+      readonly payload: {
+        readonly runId: string;
+        readonly runner: TestRunnerId;
+        readonly path?: string;
+      };
+    }
+  | { readonly type: 'test/finished'; readonly payload: TestRunSummary }
+  | { readonly type: 'test/coverage'; readonly payload: CoverageReport }
   | { readonly type: 'updater/state'; readonly payload: UpdaterState }
   | { readonly type: 'docker/changed'; readonly payload: readonly ContainerInfo[] }
   | {

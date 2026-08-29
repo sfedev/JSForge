@@ -9,11 +9,15 @@
 import type {
   AiProviderInfo,
   BreakpointState,
+  CoverageReport,
   DebugCallFrameView,
   DebugConsoleEvent,
   DebugSessionInfo,
   DotForgeManifest,
   HeapSample,
+  TestBlock,
+  TestRunSummary,
+  TestRunnerId,
   ForgeSettings,
   GitStatus,
   LogRecord,
@@ -51,9 +55,10 @@ export type SidebarView =
   | 'http'
   | 'metrics'
   | 'debug'
-  | 'spec';
+  | 'spec'
+  | 'testing';
 
-export type PanelView = 'output' | 'terminal' | 'problems' | 'http' | 'metrics' | 'debug' | 'spec';
+export type PanelView = 'output' | 'terminal' | 'problems' | 'http' | 'metrics' | 'debug' | 'spec' | 'testing';
 
 export interface AiConversationMessage {
   readonly id: string;
@@ -109,6 +114,17 @@ export interface ForgeState {
   debugConsole: DebugConsoleEvent[];
   /** Muestras de heap por sesion, para la grafica de fugas. */
   heapSamples: Map<string, HeapSample[]>;
+
+  testRunners: TestRunnerId[];
+  /** Resumen de la ultima ejecucion; null mientras no haya corrido nada. */
+  testRun: TestRunSummary | null;
+  /** Identificador de la ejecucion en curso, si la hay. */
+  testRunning: string | null;
+  /** Bloques detectados por archivo, para el code lens del editor. */
+  testBlocks: Map<string, TestBlock[]>;
+  coverage: CoverageReport | null;
+  /** Si es false, el margen del editor no pinta la cobertura. */
+  coverageVisible: boolean;
 }
 
 export type StateKey = keyof ForgeState;
@@ -155,6 +171,13 @@ function initialState(): ForgeState {
     activeDebugFrame: null,
     debugConsole: [],
     heapSamples: new Map(),
+
+    testRunners: [],
+    testRun: null,
+    testRunning: null,
+    testBlocks: new Map(),
+    coverage: null,
+    coverageVisible: false,
   };
 }
 

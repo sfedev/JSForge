@@ -16,6 +16,7 @@ import type {
   ComposeFileView,
   ContainerInfo,
   ContractAuditReport,
+  CoverageReport,
   DbSchemaView,
   DebugAttachRequest,
   DebugEvaluateRequest,
@@ -66,6 +67,10 @@ import type {
   SpecGenerateRequest,
   SpecGenerateResult,
   StartProcessRequest,
+  TestBlock,
+  TestRunRequest,
+  TestRunSummary,
+  TestRunnerId,
   ToolchainInfo,
   UpdateChannel,
   UpdaterState,
@@ -265,6 +270,22 @@ export interface ForgeSpecApi {
   audit(relativePath: string, revision?: string): Promise<Result<ContractAuditReport>>;
 }
 
+export interface ForgeTestingApi {
+  /** Archivos `*.test.ts` / `*.spec.ts` del workspace. */
+  discover(): Promise<Result<readonly string[]>>;
+  /**
+   * Bloques `describe`/`it` de un archivo, para el code lens.
+   * Con `content` se analiza lo que el editor tiene sin guardar.
+   */
+  blocks(relativePath: string, content?: string): Promise<Result<readonly TestBlock[]>>;
+  runners(): Promise<Result<readonly TestRunnerId[]>>;
+  /** El progreso llega por eventos `test/started` y `test/finished`. */
+  run(request: TestRunRequest): Promise<Result<TestRunSummary>>;
+  cancel(runId: string): Promise<Result<true>>;
+  lastRun(): Promise<Result<TestRunSummary | null>>;
+  coverage(): Promise<Result<CoverageReport | null>>;
+}
+
 export interface ForgeSettingsApi {
   get(): Promise<Result<ForgeSettings>>;
   set(patch: Partial<ForgeSettings>): Promise<Result<ForgeSettings>>;
@@ -292,6 +313,7 @@ export interface ForgeApi {
   readonly metrics: ForgeMetricsApi;
   readonly debug: ForgeDebugApi;
   readonly spec: ForgeSpecApi;
+  readonly testing: ForgeTestingApi;
   readonly updater: ForgeUpdaterApi;
   readonly settings: ForgeSettingsApi;
   /** Suscripcion al flujo unico de eventos main -> renderer. */
