@@ -257,6 +257,12 @@ omitía Docker, el ORM y el linter.
 - Exponer `ipcRenderer`, `require` o `process` al renderer.
 - Comparar rutas con `startsWith` en lugar de `assertInsideWorkspace()`.
 - Devolver una excepción a través del IPC en vez de `Result.error`.
+- Declarar `available: true` en un perfil de terminal sin comprobar que el
+  binario existe. La interfaz lo ofrece y el usuario recibe un `File not
+  found:` que no dice qué falta.
+- Descartar en silencio una acción del usuario porque el recurso murió. Si
+  una terminal ya terminó, hay que decirlo: teclear contra un hueco sin
+  respuesta es el fallo más desconcertante que puede dar la aplicación.
 - Evaluar configuración de un proyecto ajeno (`eval`, `new Function`, importar
   `vite.config.ts`, `.forge/plugin.ts` o `src/shared/*.ts`). Todo se lee por
   análisis textual.
