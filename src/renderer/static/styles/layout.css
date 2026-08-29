@@ -47,34 +47,37 @@
 /*  Barra de titulo                                                            */
 /* -------------------------------------------------------------------------- */
 
-/*
- * Hueco de los controles nativos de la ventana.
- *
- * En Windows la ventana usa `titleBarOverlay`: el sistema dibuja minimizar,
- * maximizar y cerrar ENCIMA del extremo derecho de la barra, no a
- * continuacion. Sin reservar ese ancho, los botones propios quedan debajo y
- * se ven cortados.
- *
- * El valor lo mide `title-bar.ts` con `navigator.windowControlsOverlay`, que
- * es lo unico fiable: el ancho cambia con la escala del sistema y en
- * disposiciones de derecha a izquierda los controles se van al otro lado.
- * Cero es el valor correcto cuando no hay overlay (macOS, o ventana con
- * marco del sistema).
- */
-:root {
-  --titlebar-controls-start: 0px;
-  --titlebar-controls-end: 0px;
-}
-
 .titlebar {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding-inline: calc(var(--space-3) + var(--titlebar-controls-start))
-    calc(var(--space-3) + var(--titlebar-controls-end));
   background: var(--surface-2);
   border-bottom: 1px solid var(--border-subtle);
   -webkit-app-region: drag;
+
+  /*
+   * Hueco de los controles nativos de la ventana.
+   *
+   * En Windows la ventana usa `titleBarOverlay`: el sistema dibuja minimizar,
+   * maximizar y cerrar ENCIMA del extremo derecho de la barra, no a
+   * continuacion. Sin reservar ese ancho, los botones propios quedan debajo y
+   * se ven cortados.
+   *
+   * `env(titlebar-area-*)` describe la zona LIBRE de la barra y la resuelve el
+   * motor de maquetado en cada calculo, asi que no puede quedarse obsoleta.
+   * Medirlo desde JavaScript con `innerWidth - rect.right` acopla dos valores
+   * que se actualizan en momentos distintos: al estrechar la ventana se leia
+   * el ancho anterior y el padding salia enorme, tan grande que la propia
+   * barra desbordaba la ventana y arrastraba al shell entero.
+   *
+   * El `100%` se resuelve contra el ancho de la ventana. Sin overlay (macOS,
+   * o ventana con marco del sistema) los valores de respaldo dejan el padding
+   * en `--space-3` por ambos lados, que es justo lo que se quiere.
+   */
+  padding-left: calc(env(titlebar-area-x, 0px) + var(--space-3));
+  padding-right: calc(
+    100% - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100%) + var(--space-3)
+  );
 }
 
 /*
@@ -287,6 +290,51 @@
 
 .panel__spacer {
   flex: 1;
+}
+
+/*
+ * Las acciones quedan ancladas al borde derecho.
+ *
+ * La fila de pestanas se desplaza cuando no caben (son ocho), y ademas tiene
+ * la barra de desplazamiento oculta. Sin anclarlas, el boton de cerrar el
+ * panel y las acciones de la vista se iban con el desplazamiento y dejaban de
+ * existir para el usuario, sin ninguna pista de que seguian ahi.
+ *
+ * El fondo es opaco a proposito: las pestanas pasan por debajo al desplazar,
+ * y la sombra hacia la izquierda es la unica senal de que hay mas.
+ */
+.panel__actions {
+  position: sticky;
+  right: 0;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding-left: var(--space-2);
+  background: var(--surface-1);
+}
+
+/*
+ * Degradado a la izquierda de las acciones.
+ *
+ * Las pestanas pasan por debajo al desplazarse. Sin esto se cortan a media
+ * palabra («DEPURAC»), que parece un fallo de maquetacion en vez de lo que
+ * es: que hay mas pestanas y la fila se puede desplazar.
+ */
+.panel__actions::before {
+  content: '';
+  position: absolute;
+  right: 100%;
+  top: 0;
+  bottom: 0;
+  width: 28px;
+  background: linear-gradient(to right, transparent, var(--surface-1));
+  pointer-events: none;
+}
+
+/* Las pestanas nunca se encogen: media palabra no identifica una vista. */
+.panel__tabs .pill-tab {
+  flex: 0 0 auto;
 }
 
 .panel__content {

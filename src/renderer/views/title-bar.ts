@@ -14,61 +14,9 @@ const MENU: readonly { label: string; commandId: string }[] = [
   { label: 'Ayuda', commandId: 'menu.help' },
 ];
 
-/**
- * `navigator.windowControlsOverlay` aun no esta en la libreria DOM de
- * TypeScript; se declara solo lo que se usa.
- */
-interface WindowControlsOverlay {
-  readonly visible: boolean;
-  getTitlebarAreaRect(): DOMRect;
-  addEventListener(type: 'geometrychange', listener: () => void): void;
-}
-
-/**
- * Reserva el hueco que ocupan los controles nativos de la ventana.
- *
- * En Windows, `titleBarOverlay` hace que el sistema dibuje minimizar,
- * maximizar y cerrar ENCIMA del extremo derecho de la barra. Sin reservar ese
- * ancho, los botones propios quedan debajo y aparecen recortados.
- *
- * Se mide en lugar de fijar una constante porque el ancho depende de la
- * escala del sistema y de la version de Windows, y en disposiciones de
- * derecha a izquierda los controles cambian de lado. Cuando no hay overlay
- * (macOS con su semaforo, o ventana con marco) el hueco es cero y no se
- * reserva nada.
- */
-function reserveWindowControls(): void {
-  const overlay = (
-    navigator as Navigator & { windowControlsOverlay?: WindowControlsOverlay }
-  ).windowControlsOverlay;
-  const root = document.documentElement;
-
-  const apply = (): void => {
-    if (overlay === undefined || !overlay.visible) {
-      root.style.setProperty('--titlebar-controls-start', '0px');
-      root.style.setProperty('--titlebar-controls-end', '0px');
-      return;
-    }
-    // El rectangulo es la zona LIBRE de la barra; lo que queda a cada lado
-    // es lo que ocupan los controles.
-    const rect = overlay.getTitlebarAreaRect();
-    root.style.setProperty('--titlebar-controls-start', `${Math.max(0, rect.x)}px`);
-    root.style.setProperty(
-      '--titlebar-controls-end',
-      `${Math.max(0, window.innerWidth - rect.right)}px`,
-    );
-  };
-
-  apply();
-  // La geometria cambia al maximizar y al cambiar la escala del sistema.
-  overlay?.addEventListener('geometrychange', apply);
-}
-
 export function mountTitleBar(mounts: ShellMounts): void {
-  // Antes de anadir nada: si los botones se pintan bajo los controles
-  // nativos, el primer fotograma ya sale mal.
-  reserveWindowControls();
-
+  // El hueco de los controles nativos de la ventana lo reserva la hoja de
+  // estilos con `env(titlebar-area-*)`; aqui no hay nada que medir.
   for (const entry of MENU) {
     const button = h('button', { class: 'chrome-btn', type: 'button' }, entry.label);
     button.addEventListener('click', () => void runCommand(entry.commandId));

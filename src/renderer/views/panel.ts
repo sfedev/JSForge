@@ -114,6 +114,7 @@ export function mountPanel(mounts: ShellMounts): void {
   render();
 
   setupResizer(mounts);
+  setupTabScrolling(mounts);
 
   defineCommands([
     ...PANEL_ITEMS.map((item) => ({
@@ -129,6 +130,38 @@ export function mountPanel(mounts: ShellMounts): void {
       run: () => store.patch({ panelVisible: !store.state.panelVisible }),
     },
   ]);
+}
+
+/**
+ * La rueda del raton desplaza la fila de pestanas en horizontal.
+ *
+ * Con ocho pestanas, en una ventana estrecha las ultimas no caben. La fila ya
+ * se desplaza, pero su barra esta oculta por diseno, asi que la unica forma
+ * de llegar a ellas era `Mayus`+rueda, que casi nadie conoce. El navegador no
+ * convierte el desplazamiento vertical en horizontal por su cuenta.
+ */
+function setupTabScrolling(mounts: ShellMounts): void {
+  const tabs = mounts.panelTabs;
+
+  tabs.addEventListener(
+    'wheel',
+    (event: WheelEvent) => {
+      // Si no hay nada que desplazar, se deja pasar el evento.
+      if (tabs.scrollWidth <= tabs.clientWidth) {
+        return;
+      }
+      // Un raton normal solo emite deltaY; un panel tactil puede dar ambos.
+      const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+      if (delta === 0) {
+        return;
+      }
+      event.preventDefault();
+      tabs.scrollLeft += delta;
+    },
+    // No es pasivo a proposito: hace falta `preventDefault` para que la
+    // rueda no desplace ademas el contenedor de alrededor.
+    { passive: false },
+  );
 }
 
 /** Arrastre vertical del divisor superior del panel. */
