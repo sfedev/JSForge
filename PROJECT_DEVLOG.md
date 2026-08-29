@@ -12,14 +12,14 @@ descartó y qué falló por el camino.
 
 | | |
 | --- | --- |
-| Versión | 0.1.0 |
+| Versión | 0.2.0 |
 | Electron | 44 (Node 24.18, Chromium 152) |
 | Toolchain | esbuild 0.28 · electron-builder 26 · TypeScript 5.7 |
 | `npm audit` | **0 vulnerabilidades** |
 | Pruebas | **329, todas en verde** |
 | Código | ~40 000 líneas de TypeScript en `src/` |
 | Canales IPC | 128 |
-| Commits | 27 |
+| Commits | 34 |
 
 ---
 
@@ -435,6 +435,11 @@ Todo el desarrollo ocurrió el **2026-08-28**, en commits atómicos por módulo.
 | `1d9feed` | **Pruebas**: code lens, ejecutor y cobertura |
 | `14def29` | **Forge Vault** y guardias de arquitectura |
 | `aff9abe` | **Motor de plugins** declarativo |
+| `23d2c00` | Documentación de la suite: 6 ADR nuevos |
+| `3a5c52a`, `8ff2c7b` | Barra de título y desbordamiento del panel |
+| `ce1e3a1` | El empaquetado deja de exigir `node-gyp` |
+| `ec14492` | Terminal muerta y perfiles que mentían |
+| — | **0.2.0**: cinco módulos nuevos sobre la base 0.1.0 |
 
 ---
 

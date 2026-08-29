@@ -1,7 +1,7 @@
 {
   "name": "forgejs-ide",
   "productName": "ForgeJS IDE",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "IDE de escritorio liviano y de alto rendimiento para el ecosistema Fullstack JavaScript/TypeScript, impulsado por el motor DotForge.",
   "author": {
     "name": "Sergio Rayo",
