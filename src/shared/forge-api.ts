@@ -74,6 +74,8 @@ import type {
   ToolchainInfo,
   UpdateChannel,
   UpdaterState,
+  VaultView,
+  VaultWriteRequest,
   WindowState,
   WorkspaceInfo,
   WriteFileRequest,
@@ -286,6 +288,22 @@ export interface ForgeTestingApi {
   coverage(): Promise<Result<CoverageReport | null>>;
 }
 
+export interface ForgeVaultApi {
+  /** Archivos de entorno con los secretos ya enmascarados. */
+  read(): Promise<Result<VaultView>>;
+  write(request: VaultWriteRequest): Promise<Result<VaultView>>;
+  /** Revela el valor real de UNA clave, a peticion explicita. */
+  reveal(file: string, key: string): Promise<Result<string>>;
+  /** Claves del almacen cifrado; los valores nunca salen del main. */
+  secrets(): Promise<Result<readonly string[]>>;
+  setSecret(key: string, value: string): Promise<Result<true>>;
+  deleteSecret(key: string): Promise<Result<true>>;
+  /** Cifra la variable y la RETIRA del archivo en texto plano. */
+  promote(file: string, key: string): Promise<Result<VaultView>>;
+  /** Vuelca las claves a `.env.example`, sin los valores sensibles. */
+  syncExample(): Promise<Result<VaultView>>;
+}
+
 export interface ForgeSettingsApi {
   get(): Promise<Result<ForgeSettings>>;
   set(patch: Partial<ForgeSettings>): Promise<Result<ForgeSettings>>;
@@ -314,6 +332,7 @@ export interface ForgeApi {
   readonly debug: ForgeDebugApi;
   readonly spec: ForgeSpecApi;
   readonly testing: ForgeTestingApi;
+  readonly vault: ForgeVaultApi;
   readonly updater: ForgeUpdaterApi;
   readonly settings: ForgeSettingsApi;
   /** Suscripcion al flujo unico de eventos main -> renderer. */

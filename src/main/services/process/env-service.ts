@@ -11,6 +11,33 @@ import type { DotForgeEnvironment, EnvFileView, EnvVariableView } from '../../..
 import { readTextIfExists } from '../fs-service.js';
 import { readManifest } from '../dotforge/config-service.js';
 
+/**
+ * Proveedor de los secretos del almacen cifrado.
+ *
+ * Se INYECTA en lugar de importarse. El almacen usa `safeStorage`, es decir,
+ * `electron`, y este modulo lo cargan las pruebas para ejercitar el analisis
+ * de archivos `.env`: importarlo directamente arrastraria Electron a un
+ * modulo que debe seguir siendo analizable sin el.
+ *
+ * `main.ts` registra el proveedor real durante el arranque.
+ */
+type SecretProvider = () => readonly (readonly [string, string])[];
+
+let secretProvider: SecretProvider | null = null;
+
+export function setVaultSecretProvider(provider: SecretProvider | null): void {
+  secretProvider = provider;
+}
+
+function vaultVariables(): readonly (readonly [string, string])[] {
+  try {
+    return secretProvider?.() ?? [];
+  } catch {
+    // Un almacen ilegible no debe impedir lanzar el proceso.
+    return [];
+  }
+}
+
 /** Nombres que casi siempre contienen credenciales. */
 const SECRET_PATTERNS: readonly RegExp[] = [
   /secret/i,
@@ -206,6 +233,15 @@ export async function resolveProcessEnv(
   for (const [key, value] of Object.entries(environment?.variables ?? {})) {
     result[key] = value;
   }
+
+  // Secretos promovidos al almacen cifrado del sistema. Van DESPUES de los
+  // archivos para que un valor promovido gane al residuo que pudiera quedar
+  // en un `.env` sin limpiar, y antes de los `overrides` explicitos, que
+  // siempre mandan. Los valores se descifran aqui y no salen del proceso.
+  for (const [key, value] of vaultVariables()) {
+    result[key] = value;
+  }
+
   for (const [key, value] of Object.entries(overrides)) {
     result[key] = value;
   }
@@ -238,6 +274,13 @@ export async function secretKeys(environmentId?: string | null): Promise<Set<str
     if (isSecretKey(key, declared)) {
       keys.add(key);
     }
+  }
+
+  // Todo lo que vive en el almacen cifrado es secreto por definicion: el
+  // usuario lo promovio justamente por eso. Sin esto, una credencial
+  // promovida se imprimiria sin redactar en la salida del proceso.
+  for (const [key] of vaultVariables()) {
+    keys.add(key);
   }
   return keys;
 }

@@ -27,6 +27,7 @@ import type {
   ProjectManifest,
   ToolchainInfo,
   UpdaterState,
+  VaultView,
   WorkspaceInfo,
 } from '../../shared/contracts.js';
 import { DEFAULT_SETTINGS } from '../../shared/contracts.js';
@@ -56,7 +57,8 @@ export type SidebarView =
   | 'metrics'
   | 'debug'
   | 'spec'
-  | 'testing';
+  | 'testing'
+  | 'vault';
 
 export type PanelView = 'output' | 'terminal' | 'problems' | 'http' | 'metrics' | 'debug' | 'spec' | 'testing';
 
@@ -125,6 +127,9 @@ export interface ForgeState {
   coverage: CoverageReport | null;
   /** Si es false, el margen del editor no pinta la cobertura. */
   coverageVisible: boolean;
+
+  /** Vista del vault; los secretos llegan ya enmascarados. */
+  vault: VaultView | null;
 }
 
 export type StateKey = keyof ForgeState;
@@ -178,6 +183,8 @@ function initialState(): ForgeState {
     testBlocks: new Map(),
     coverage: null,
     coverageVisible: false,
+
+    vault: null,
   };
 }
 

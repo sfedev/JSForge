@@ -53,6 +53,7 @@ export const ACTIVITY_ITEMS: readonly ActivityItem[] = [
   { id: 'debug', label: 'Depuracion', icon: 'debug', shortcut: 'Ctrl+Shift+D' },
   { id: 'spec', label: 'Contratos y API', icon: 'contract' },
   { id: 'testing', label: 'Pruebas', icon: 'flask', shortcut: 'Ctrl+Shift+T' },
+  { id: 'vault', label: 'Entorno y secretos', icon: 'lock' },
 ];
 
 export const PANEL_ITEMS: readonly { id: PanelView; label: string }[] = [

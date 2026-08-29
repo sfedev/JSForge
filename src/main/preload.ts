@@ -39,6 +39,7 @@ import {
   type SourceBreakpoint,
   type SpecGenerateRequest,
   type TestRunRequest,
+  type VaultWriteRequest,
   type StartProcessRequest,
   type UpdateChannel,
   type WriteFileRequest,
@@ -271,6 +272,17 @@ const api: ForgeApi = {
     cancel: (runId: string) => call(IPC.TEST_CANCEL, runId),
     lastRun: () => call(IPC.TEST_LAST_RUN),
     coverage: () => call(IPC.TEST_COVERAGE),
+  },
+
+  vault: {
+    read: () => call(IPC.VAULT_READ),
+    write: (request: VaultWriteRequest) => call(IPC.VAULT_WRITE, request),
+    reveal: (file: string, key: string) => call(IPC.VAULT_REVEAL, file, key),
+    secrets: () => call(IPC.VAULT_SECRETS),
+    setSecret: (key: string, value: string) => call(IPC.VAULT_SET_SECRET, key, value),
+    deleteSecret: (key: string) => call(IPC.VAULT_DELETE_SECRET, key),
+    promote: (file: string, key: string) => call(IPC.VAULT_PROMOTE, file, key),
+    syncExample: () => call(IPC.VAULT_SYNC_EXAMPLE),
   },
 
   settings: {

@@ -27,6 +27,9 @@ import { disposeAllSessions } from './services/terminal/pty-service.js';
 import { disposeMetrics } from './services/metrics/metrics-service.js';
 import { disposeAllSessions as disposeDebugSessions } from './debugger/debug-session.js';
 import { disposeTestRuns } from './services/testing/test-service.js';
+import { setVaultSecretProvider } from './services/process/env-service.js';
+import { vaultEnvEntries } from './services/vault/vault-service.js';
+import { resetVaultCache } from './services/vault/secret-store.js';
 import { cancelAllRequests } from './services/http/http-client.js';
 import { initializeUpdater } from './services/updater/updater-service.js';
 import { createMainWindow, getMainWindow } from './window.js';
@@ -94,6 +97,10 @@ async function onReady(): Promise<void> {
   registerAppProtocol(RENDERER_ROOT);
 
   /* 4. Manejadores IPC. */
+  // El almacen cifrado se inyecta en el resolutor de entorno: asi
+  // `env-service` sigue siendo analizable sin Electron.
+  setVaultSecretProvider(vaultEnvEntries);
+
   registerAllHandlers();
 
   const settings = getSettings();
@@ -133,6 +140,8 @@ function shutdown(): void {
     disposeMetrics();
     disposeDebugSessions();
     disposeTestRuns();
+    setVaultSecretProvider(null);
+    resetVaultCache();
     cancelAllRequests();
     closeWorkspace();
   } catch (cause) {

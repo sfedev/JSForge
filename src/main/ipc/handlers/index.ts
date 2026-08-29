@@ -16,6 +16,7 @@ import { registerSpecHandlers } from './spec-handlers.js';
 import { registerTerminalHandlers } from './terminal-handlers.js';
 import { registerTestHandlers } from './test-handlers.js';
 import { registerToolsHandlers } from './tools-handlers.js';
+import { registerVaultHandlers } from './vault-handlers.js';
 
 export function registerAllHandlers(): void {
   registerCoreHandlers();
@@ -29,4 +30,5 @@ export function registerAllHandlers(): void {
   registerDebugHandlers();
   registerSpecHandlers();
   registerTestHandlers();
+  registerVaultHandlers();
 }

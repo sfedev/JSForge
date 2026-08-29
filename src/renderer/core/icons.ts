@@ -47,6 +47,7 @@ export const ICONS = {
   debug: 'M9 6a3 3 0 0 1 6 0v1H9zM7 10h10v4a5 5 0 0 1-10 0zM4 11h3M17 11h3M4.5 16.5l2.6-1.3M19.5 16.5l-2.6-1.3M5.5 7l2 1M18.5 7l-2 1',
   contract: 'M7 3h7l4 4v14H7zM14 3v4h4M10 12h6M10 16h4M10 8h2',
   flask: 'M10 3h4M11 3v6L5.5 18a2 2 0 0 0 1.7 3h9.6a2 2 0 0 0 1.7-3L13 9V3M8 15h8',
+  lock: 'M6 11h12v9H6zM9 11V7.5a3 3 0 0 1 6 0V11M12 15v2',
   power: 'M12 4v8M7.5 7a7 7 0 1 0 9 0',
 } as const;
 

@@ -129,6 +129,10 @@ export function registerEventBridge(): () => void {
         void runCommand('testing.handleResults', event.payload);
         break;
 
+      case 'vault/changed':
+        store.patch({ vault: event.payload });
+        break;
+
       case 'test/coverage':
         store.patch({ coverage: event.payload });
         void runCommand('testing.handleCoverage', event.payload);

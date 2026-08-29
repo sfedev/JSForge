@@ -223,6 +223,16 @@ export const IPC = {
   TEST_LAST_RUN: 'forge:test/last-run',
   TEST_COVERAGE: 'forge:test/coverage',
 
+  /* Forge Vault: entorno y secretos */
+  VAULT_READ: 'forge:vault/read',
+  VAULT_WRITE: 'forge:vault/write',
+  VAULT_REVEAL: 'forge:vault/reveal',
+  VAULT_SECRETS: 'forge:vault/secrets',
+  VAULT_SET_SECRET: 'forge:vault/set-secret',
+  VAULT_DELETE_SECRET: 'forge:vault/delete-secret',
+  VAULT_PROMOTE: 'forge:vault/promote',
+  VAULT_SYNC_EXAMPLE: 'forge:vault/sync-example',
+
   /* Preferencias */
   SETTINGS_GET: 'forge:settings/get',
   SETTINGS_SET: 'forge:settings/set',
@@ -1533,6 +1543,80 @@ export interface CoverageReport {
   readonly generatedAt: number;
 }
 
+/* -------------------------------------------------------------------------- */
+/*  Forge Vault: entorno y secretos                                            */
+/* -------------------------------------------------------------------------- */
+
+/** Formato esperado de un valor, deducido del nombre de la variable. */
+export type EnvValueFormat =
+  | 'text'
+  | 'url'
+  | 'port'
+  | 'number'
+  | 'boolean'
+  | 'base64'
+  | 'email'
+  | 'secret';
+
+export type EnvIssueKind =
+  | 'missing'
+  | 'undocumented'
+  | 'empty'
+  | 'placeholder'
+  | 'invalid-format';
+
+export interface EnvIssue {
+  readonly kind: EnvIssueKind;
+  readonly file: string;
+  readonly key: string;
+  readonly message: string;
+  readonly severity: 'error' | 'warning' | 'info';
+}
+
+/** Fila del editor tabular. El valor llega enmascarado si es secreto. */
+export interface VaultVariable {
+  readonly key: string;
+  readonly value: string;
+  readonly secret: boolean;
+  readonly format: EnvValueFormat;
+  /** Linea dentro del archivo, para saltar al texto plano. */
+  readonly line: number;
+  /** Comentario que precede a la variable, si lo hay. */
+  readonly comment?: string;
+}
+
+export interface VaultFileView {
+  readonly path: string;
+  /** true si es el archivo de referencia (`.env.example`). */
+  readonly isExample: boolean;
+  readonly variables: readonly VaultVariable[];
+}
+
+export interface VaultView {
+  readonly files: readonly VaultFileView[];
+  readonly issues: readonly EnvIssue[];
+  /** Claves guardadas en el almacen cifrado del sistema. */
+  readonly vaultKeys: readonly string[];
+  /** false si el sistema no ofrece cifrado: no se guardara nada. */
+  readonly secureStorageAvailable: boolean;
+}
+
+/** Cambio pedido desde la tabla. `value: null` elimina la variable. */
+export interface VaultEdit {
+  readonly key: string;
+  readonly value: string | null;
+}
+
+export interface VaultWriteRequest {
+  readonly path: string;
+  readonly edits: readonly VaultEdit[];
+}
+
+export interface VaultEntry {
+  readonly key: string;
+  readonly updatedAt: number;
+}
+
 export type ForgeEvent =
   | { readonly type: 'window/state'; readonly payload: WindowState }
   | { readonly type: 'workspace/changed'; readonly payload: WorkspaceInfo | null }
@@ -1578,6 +1662,7 @@ export type ForgeEvent =
     }
   | { readonly type: 'test/finished'; readonly payload: TestRunSummary }
   | { readonly type: 'test/coverage'; readonly payload: CoverageReport }
+  | { readonly type: 'vault/changed'; readonly payload: VaultView }
   | { readonly type: 'updater/state'; readonly payload: UpdaterState }
   | { readonly type: 'docker/changed'; readonly payload: readonly ContainerInfo[] }
   | {

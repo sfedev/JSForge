@@ -37,6 +37,7 @@ import { registerProblemsView } from './views/problems-view.js';
 import { registerDebugView } from './views/debug-view.js';
 import { registerSpecView } from './views/spec-view.js';
 import { registerTestingView } from './views/testing-view.js';
+import { registerVaultView } from './views/vault-view.js';
 import { registerLspBridge } from './lsp/lsp-bridge.js';
 
 async function boot(): Promise<void> {
@@ -71,6 +72,7 @@ async function boot(): Promise<void> {
   registerDebugView();
   registerSpecView();
   registerTestingView();
+  registerVaultView();
 
   mountTitleBar(mounts);
   mountActivityBar(mounts);
