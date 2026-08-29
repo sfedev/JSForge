@@ -207,6 +207,13 @@ export const IPC = {
   DEBUG_HEAP_TREND: 'forge:debug/heap-trend',
   DEBUG_COLLECT_GARBAGE: 'forge:debug/collect-garbage',
 
+  /* Especificaciones OpenAPI y auditoria de contratos */
+  SPEC_DISCOVER: 'forge:spec/discover',
+  SPEC_PARSE: 'forge:spec/parse',
+  SPEC_GENERATE: 'forge:spec/generate',
+  SPEC_AUDIT: 'forge:spec/audit',
+  SPEC_AUDIT_TARGETS: 'forge:spec/audit-targets',
+
   /* Preferencias */
   SETTINGS_GET: 'forge:settings/get',
   SETTINGS_SET: 'forge:settings/set',
@@ -1283,6 +1290,140 @@ export interface HeapTrend {
   readonly slopeMbPerMinute: number;
   /** Crecimiento sostenido sin recuperacion: posible fuga. */
   readonly leakSuspected: boolean;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Especificaciones OpenAPI                                                   */
+/* -------------------------------------------------------------------------- */
+
+export type OpenApiMethod =
+  | 'get'
+  | 'post'
+  | 'put'
+  | 'patch'
+  | 'delete'
+  | 'head'
+  | 'options'
+  | 'trace';
+
+export interface OpenApiParameter {
+  readonly name: string;
+  readonly location: 'path' | 'query' | 'header' | 'cookie';
+  readonly required: boolean;
+  /** Tipo ya traducido a notacion de TypeScript. */
+  readonly type: string;
+  readonly description?: string;
+}
+
+export interface OpenApiResponse {
+  readonly status: string;
+  readonly description: string;
+  /** Nombre del esquema referenciado, si la respuesta lleva cuerpo. */
+  readonly schemaRef?: string;
+  readonly contentType?: string;
+}
+
+export interface OpenApiOperation {
+  /** `operationId`, o `metodo:ruta` cuando la especificacion no lo declara. */
+  readonly id: string;
+  readonly method: OpenApiMethod;
+  readonly path: string;
+  readonly summary?: string;
+  readonly description?: string;
+  readonly tags: readonly string[];
+  readonly deprecated: boolean;
+  readonly parameters: readonly OpenApiParameter[];
+  readonly requestBodyRef?: string;
+  readonly requestBodyRequired: boolean;
+  readonly responses: readonly OpenApiResponse[];
+  /** Linea aproximada en el documento, para saltar desde la vista. */
+  readonly line: number;
+}
+
+export interface OpenApiSchemaField {
+  readonly name: string;
+  readonly type: string;
+  readonly required: boolean;
+  readonly nullable: boolean;
+  readonly enumValues?: readonly string[];
+  readonly ref?: string;
+  readonly description?: string;
+}
+
+export interface OpenApiSchema {
+  readonly name: string;
+  readonly type: string;
+  readonly fields: readonly OpenApiSchemaField[];
+  readonly line: number;
+}
+
+export interface OpenApiDocumentView {
+  readonly path: string;
+  readonly title: string;
+  readonly version: string;
+  readonly openapi: string;
+  readonly servers: readonly string[];
+  readonly operations: readonly OpenApiOperation[];
+  readonly schemas: readonly OpenApiSchema[];
+  /** Lo que el lector no supo interpretar, en lugar de callarlo. */
+  readonly warnings: readonly string[];
+}
+
+export type SpecGenerationTarget = 'types' | 'react-hooks' | 'vue-composables' | 'client';
+
+export interface SpecGenerateRequest {
+  readonly specPath: string;
+  readonly target: SpecGenerationTarget;
+  /** Limita la generacion a estas operaciones; vacio significa todas. */
+  readonly operationIds?: readonly string[];
+  readonly outputPath?: string;
+  /** Si es false, solo se calcula el contenido y no se escribe nada. */
+  readonly write?: boolean;
+}
+
+export interface SpecGenerateResult {
+  readonly path: string;
+  readonly content: string;
+  readonly written: boolean;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Auditoria de contratos compartidos                                         */
+/* -------------------------------------------------------------------------- */
+
+export type BreakingChangeKind =
+  | 'removed-export'
+  | 'removed-field'
+  | 'required-field-added'
+  | 'optional-became-required'
+  | 'type-changed'
+  | 'enum-value-removed';
+
+export interface BreakingChange {
+  readonly kind: BreakingChangeKind;
+  /** Nombre del tipo afectado. */
+  readonly symbol: string;
+  /** Campo concreto, cuando el cambio es de un miembro. */
+  readonly member?: string;
+  readonly before?: string;
+  readonly after?: string;
+  readonly detail: string;
+  readonly line: number;
+}
+
+export interface ContractDependent {
+  readonly path: string;
+  /** Simbolos afectados que este archivo importa. */
+  readonly symbols: readonly string[];
+  readonly line: number;
+}
+
+export interface ContractAuditReport {
+  readonly path: string;
+  /** Referencia contra la que se comparo (por ejemplo `HEAD`). */
+  readonly comparedAgainst: string;
+  readonly changes: readonly BreakingChange[];
+  readonly dependents: readonly ContractDependent[];
 }
 
 export type ForgeEvent =

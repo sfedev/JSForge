@@ -299,6 +299,24 @@ async function showFile(revision: string, relativePath: string): Promise<string>
 }
 
 /**
+ * Contenido de un archivo en una revision, o `null` si no existe alli.
+ *
+ * Lo usa el auditor de contratos para comparar el modulo del editor con el
+ * que ya consumen las demas capas. Se distingue «no existe en esa revision»
+ * de «existe y esta vacio», porque un archivo nuevo no tiene nada que
+ * auditar y un archivo vaciado lo rompe todo.
+ */
+export async function fileAtRevision(
+  revision: string,
+  relativePath: string,
+): Promise<string | null> {
+  const root = requireWorkspaceRoot();
+  const guarded = assertInsideWorkspace(root, relativePath);
+  const result = await gitSafe(['show', `${revision}:${guarded.relative}`]);
+  return result === null ? null : result.stdout;
+}
+
+/**
  * Par de contenidos para el visor lado a lado.
  *
  *  - `staged: true`  compara HEAD con el indice.

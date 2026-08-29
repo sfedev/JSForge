@@ -37,6 +37,7 @@ import {
   type Result,
   type SearchRequest,
   type SourceBreakpoint,
+  type SpecGenerateRequest,
   type StartProcessRequest,
   type UpdateChannel,
   type WriteFileRequest,
@@ -249,6 +250,15 @@ const api: ForgeApi = {
       call(IPC.DEBUG_HEAP_SUBSCRIBE, sessionId, enabled),
     heapTrend: (sessionId: string) => call(IPC.DEBUG_HEAP_TREND, sessionId),
     collectGarbage: (sessionId: string) => call(IPC.DEBUG_COLLECT_GARBAGE, sessionId),
+  },
+
+  spec: {
+    discover: () => call(IPC.SPEC_DISCOVER),
+    parse: (relativePath: string) => call(IPC.SPEC_PARSE, relativePath),
+    generate: (request: SpecGenerateRequest) => call(IPC.SPEC_GENERATE, request),
+    auditTargets: () => call(IPC.SPEC_AUDIT_TARGETS),
+    audit: (relativePath: string, revision?: string) =>
+      call(IPC.SPEC_AUDIT, relativePath, revision ?? null),
   },
 
   settings: {

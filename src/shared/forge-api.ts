@@ -15,6 +15,7 @@ import type {
   BreakpointState,
   ComposeFileView,
   ContainerInfo,
+  ContractAuditReport,
   DbSchemaView,
   DebugAttachRequest,
   DebugEvaluateRequest,
@@ -50,6 +51,7 @@ import type {
   LspRequestPayload,
   LspServerState,
   MetricsSnapshot,
+  OpenApiDocumentView,
   ProcessInfo,
   ProjectManifest,
   PtyCreateRequest,
@@ -61,6 +63,8 @@ import type {
   SearchRequest,
   SearchResult,
   SourceBreakpoint,
+  SpecGenerateRequest,
+  SpecGenerateResult,
   StartProcessRequest,
   ToolchainInfo,
   UpdateChannel,
@@ -250,6 +254,17 @@ export interface ForgeDebugApi {
   collectGarbage(sessionId: string): Promise<Result<true>>;
 }
 
+export interface ForgeSpecApi {
+  /** Especificaciones OpenAPI detectadas en el workspace. */
+  discover(): Promise<Result<readonly string[]>>;
+  parse(relativePath: string): Promise<Result<OpenApiDocumentView>>;
+  /** Con `write: false` solo calcula el contenido; no toca el disco. */
+  generate(request: SpecGenerateRequest): Promise<Result<SpecGenerateResult>>;
+  /** Modulos de `src/shared/` que se pueden auditar. */
+  auditTargets(): Promise<Result<readonly string[]>>;
+  audit(relativePath: string, revision?: string): Promise<Result<ContractAuditReport>>;
+}
+
 export interface ForgeSettingsApi {
   get(): Promise<Result<ForgeSettings>>;
   set(patch: Partial<ForgeSettings>): Promise<Result<ForgeSettings>>;
@@ -276,6 +291,7 @@ export interface ForgeApi {
   readonly db: ForgeDbApi;
   readonly metrics: ForgeMetricsApi;
   readonly debug: ForgeDebugApi;
+  readonly spec: ForgeSpecApi;
   readonly updater: ForgeUpdaterApi;
   readonly settings: ForgeSettingsApi;
   /** Suscripcion al flujo unico de eventos main -> renderer. */

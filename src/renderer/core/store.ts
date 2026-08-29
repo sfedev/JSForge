@@ -50,9 +50,10 @@ export type SidebarView =
   | 'services'
   | 'http'
   | 'metrics'
-  | 'debug';
+  | 'debug'
+  | 'spec';
 
-export type PanelView = 'output' | 'terminal' | 'problems' | 'http' | 'metrics' | 'debug';
+export type PanelView = 'output' | 'terminal' | 'problems' | 'http' | 'metrics' | 'debug' | 'spec';
 
 export interface AiConversationMessage {
   readonly id: string;
