@@ -393,6 +393,7 @@ prueba o una regla detrás.
 | La CLI ignoraba los valores por defecto | Prueba de extremo a extremo de la CLI | Los defaults se aplican en `generate()` |
 | `tailwindcss-language-server` no existía | Inventario de binarios instalados | Es `@tailwindcss/language-server` |
 | `@default(autoincrement())` mal parseado | Prueba del esquema Prisma | Lectura con paréntesis balanceados |
+| `npm run package` fallaba: `electron-builder` recompilaba `node-pty` con `node-gyp` | Al empaquetar por primera vez | `npmRebuild: false`; el módulo ya degrada solo y el proyecto promete builds sin `node-gyp` |
 | `test.describe()` de Playwright no se detectaba | Prueba del localizador de bloques | El guardia contra `mock.test(` rechazaba todo lo cualificado; ahora se acepta si quien cualifica es un global del framework |
 | La suite entera dejó de arrancar al cablear el vault | `npm test` | Import de `electron` en un módulo que las pruebas cargan; se invirtió a inyección (ADR-008) |
 | Carga de trama CDP alterada tras el siguiente fragmento | Prueba del codec WebSocket | `subarray` comparte memoria con el buffer acumulado; ahora se copia |

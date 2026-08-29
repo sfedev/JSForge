@@ -21,8 +21,14 @@ HTML5/CSS3. No es un fork de Code-OSS ni de Theia.
 | `npm run typecheck` | `tsc --noEmit -p tsconfig.json` en modo estricto. **Obligatorio antes de dar nada por terminado.** |
 | `npm test` | Compila `tests/` con esbuild y ejecuta el runner nativo de Node. |
 | `npm run clean` | Borra `dist/`, `release/` y cachés. |
-| `npm run package` | `electron-builder --dir`, sin instalador. |
-| `npm run dist` | Genera los instaladores. |
+| `npm run package` | `electron-builder --dir`, sin instalador. Deja `release/win-unpacked/`. |
+| `npm run dist` | Genera el instalador NSIS y el ZIP en `release/`. |
+
+El empaquetado va con `npmRebuild: false`. `electron-builder` recompila por
+defecto las dependencias nativas, y eso arrastraba `node-pty` a `node-gyp`,
+que es justo lo que este proyecto no exige: el módulo es opcional y degrada
+solo. Sin esa opción, `npm run package` falla al empaquetar aunque la
+aplicación funcione perfectamente en desarrollo.
 
 No hay ESLint ni Prettier configurados **sobre este repositorio**: el control
 de calidad es `typecheck` + la suite de pruebas. (Sí se generan para los

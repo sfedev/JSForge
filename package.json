@@ -51,6 +51,7 @@
   "build": {
     "appId": "dev.dotforge.forgejs-ide",
     "productName": "ForgeJS IDE",
+    "npmRebuild": false,
     "directories": {
       "output": "release",
       "buildResources": "resources"
