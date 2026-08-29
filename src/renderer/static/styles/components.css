@@ -149,6 +149,9 @@
   border-radius: var(--radius-sm);
   color: var(--text-muted);
   font-size: var(--font-size-xs);
+  /* Una etiqueta de dos palabras no debe partirse ni recortarse. */
+  white-space: nowrap;
+  flex: 0 0 auto;
 }
 
 .chrome-btn:hover {

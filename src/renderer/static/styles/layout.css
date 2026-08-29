@@ -47,14 +47,44 @@
 /*  Barra de titulo                                                            */
 /* -------------------------------------------------------------------------- */
 
+/*
+ * Hueco de los controles nativos de la ventana.
+ *
+ * En Windows la ventana usa `titleBarOverlay`: el sistema dibuja minimizar,
+ * maximizar y cerrar ENCIMA del extremo derecho de la barra, no a
+ * continuacion. Sin reservar ese ancho, los botones propios quedan debajo y
+ * se ven cortados.
+ *
+ * El valor lo mide `title-bar.ts` con `navigator.windowControlsOverlay`, que
+ * es lo unico fiable: el ancho cambia con la escala del sistema y en
+ * disposiciones de derecha a izquierda los controles se van al otro lado.
+ * Cero es el valor correcto cuando no hay overlay (macOS, o ventana con
+ * marco del sistema).
+ */
+:root {
+  --titlebar-controls-start: 0px;
+  --titlebar-controls-end: 0px;
+}
+
 .titlebar {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding-inline: var(--space-3);
+  padding-inline: calc(var(--space-3) + var(--titlebar-controls-start))
+    calc(var(--space-3) + var(--titlebar-controls-end));
   background: var(--surface-2);
   border-bottom: 1px solid var(--border-subtle);
   -webkit-app-region: drag;
+}
+
+/*
+ * Solo el titulo cede espacio. La marca, el menu y las acciones conservan su
+ * tamano: encoger un boton no lo hace mas util, solo ilegible.
+ */
+.titlebar__brand,
+.titlebar__menu,
+.titlebar__actions {
+  flex: 0 0 auto;
 }
 
 .titlebar__brand {
