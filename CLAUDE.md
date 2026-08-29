@@ -63,16 +63,21 @@ src/
     window.ts        BrowserWindow con las garantías de aislamiento
     security/        workspace-guard, CSP, protocolo forge://
     ipc/             registry (Result<T>), event-bus, handlers/
+    debugger/        cliente CDP propio: ws-frame · cdp-client
+                     debug-session · source-map · heap-trend
     services/        ai · db · docker · dotforge · format · git · http
-                     lsp · metrics · process · terminal · toolchain · updater
+                     lsp · metrics · plugins · process · spec · terminal
+                     testing · toolchain · updater · vault
   renderer/          proceso aislado (sin Node)
     index.ts         arranque y montaje del shell
     shell.ts         rejilla y puntos de montaje
     core/            store · commands · keybindings · dialogs · diff
                      dom · icons · toasts · event-bridge
-    views/           20 vistas: explorador, git, pipelines, terminal,
-                     HTTP, métricas, problemas, Forge AI, asistente…
+    views/           26 modulos: explorador, git, pipelines, terminal,
+                     HTTP, métricas, problemas, depuración, contratos,
+                     pruebas, entorno, Forge AI, asistente…
     monaco/          arranque, temas y lenguajes
+    editor/          breakpoints (margen) y code lens de pruebas
     lsp/             adaptadores de Monaco sobre LSP
     static/          index.html y hojas de estilo
   cli/forge.ts       generador headless
@@ -85,6 +90,80 @@ tests/               suite con el runner nativo de Node
 - El preload vive en `src/main/preload.ts`, no en `src/preload/`. Pertenece al
   proceso principal aunque se ejecute en un contexto restringido.
 - `core/` es `src/renderer/core/`. No hay un `core/` en la raíz.
+
+---
+
+## Suite de herramientas avanzadas
+
+Cinco módulos que comparten una misma disciplina: **nada se ejecuta que no
+haya que ejecutar**, y todo lo analizable vive en funciones puras probadas
+sin tocar disco.
+
+| Módulo | Entrada | Vista |
+| --- | --- | --- |
+| **Depurador CDP** | Inspector de Node (`--inspect`) | `debug` (barra lateral y panel) |
+| **Contratos y API** | `openapi.json` / `.yaml`, `src/shared/*.ts` | `spec` |
+| **Pruebas** | Vitest · Jest · Playwright · runner de Node | `testing` + code lens |
+| **Forge Vault** | `.env*` y `safeStorage` | `vault` |
+| **Plugins** | `.forge/plugin.ts` | Preferencias |
+
+### Depurador: solo el bucle local
+
+El cliente WebSocket es propio (`ws-frame.ts` + `cdp-client.ts`) porque `ws`
+arrastra binarios opcionales y el `WebSocket` global de Node no deja fijar
+cabeceras ni inspeccionar el handshake.
+
+**`isLoopbackHost()` no es negociable.** El inspector de Node no autentica:
+quien puede hablar con él ejecuta código arbitrario en ese proceso. Se
+verifica en el constructor del cliente y otra vez al abrir sesión.
+
+Los puntos de interrupción los posee el **renderer**, no la sesión: se marcan
+sin estar depurando y se empujan al motor en cuanto hay uno.
+
+### Contratos: el auditor responde a otra pregunta
+
+`spec.audit` no dice «qué ha cambiado» —eso ya lo dice el diff— sino **«esto
+va a dejar de compilar en otra capa»**. Distingue lo que rompe al consumidor
+(quitar un campo, añadir uno obligatorio, quitar una variante de unión) de lo
+que es compatible (añadir un campo opcional, añadir una variante).
+
+El extractor de formas es **textual**. Evaluar `src/shared/*.ts` sería
+ejecutar código del proyecto en el proceso principal.
+
+### Pruebas: el informe va a un archivo
+
+Los runners mezclan avisos, trazas y barras de progreso con el JSON. Se pide
+siempre con `--outputFile` a `node_modules/.forge/`, ya ignorado por Git en
+cualquier proyecto de JavaScript.
+
+Un archivo que **no se pudo cargar** cuenta como fallo, no como cero pruebas:
+un error de importación parecería un éxito silencioso.
+
+### Vault: cifrar o no guardar
+
+Igual que las claves de IA. Si `safeStorage` no está disponible **no se
+escribe nada**: dejarlo en claro sería peor, el usuario creería que está
+protegido.
+
+Al promover una variable se cifra primero y se borra del archivo después. Al
+revés, un fallo al guardar dejaría el valor perdido.
+
+La escritura conserva **comentarios, orden y `export`**: en un `.env` los
+comentarios son la única documentación de cada clave.
+
+### Plugins: el manifiesto se lee, nunca se ejecuta
+
+`.forge/plugin.ts` es un manifiesto **declarativo**. Se analiza con
+`object-literal.ts`, que acepta datos y rechaza —con la línea exacta— todo lo
+que exigiría evaluar: variables, llamadas, interpolaciones.
+
+Las acciones son verbos cerrados (`shell`, `command`, `write`, `open`) que el
+IDE ya sabe hacer y ejecuta con sus servicios de siempre, con las mismas
+restricciones. **Un plugin no puede hacer nada que el usuario no pudiera
+hacer desde la interfaz.**
+
+La contrapartida es explícita: no admite lógica arbitraria. Para eso está un
+script de npm, que el plugin puede invocar con `task: 'shell'`.
 
 ---
 
@@ -209,8 +288,10 @@ lleva el commit, el commit está mal partido.
 | Electron | 44 (Node 24, Chromium 152) |
 | esbuild | 0.28 · electron-builder 26 · TypeScript 5.7 |
 | `npm audit` | 0 vulnerabilidades |
-| Pruebas | 119, todas en verde |
-| Canales IPC | 89 |
+| Pruebas | 329, todas en verde |
+| Canales IPC | 128 |
 | Blueprints | 11, con patrón de arquitectura elegible |
 | Servidores LSP | 6 (TypeScript, HTML, CSS, JSON, Volar, Tailwind) |
 | Proveedores de IA | 3 (Anthropic, OpenAI, Ollama) |
+| Ejecutores de pruebas | 4 (Vitest, Jest, Playwright, runner de Node) |
+| Objetivos de generación OpenAPI | 4 (tipos, cliente, hooks React, composables Vue) |
