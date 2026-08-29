@@ -8,6 +8,7 @@
 import { h } from '../core/dom.js';
 import { defineCommands, runCommand } from '../core/commands.js';
 import { store } from '../core/store.js';
+import { buildPluginsSection } from './plugins-view.js';
 import { toast, toastError } from '../core/toasts.js';
 import type { AiProviderId, ForgeSettings, ThemeId } from '../../shared/contracts.js';
 
@@ -270,6 +271,12 @@ function open(): void {
   );
 
   body.append(appearance, tooling);
+
+  // Los plugins ocupan el ancho completo: la lista puede ser larga y sus
+  // avisos de manifiesto necesitan sitio para leerse.
+  const plugins = buildPluginsSection();
+  plugins.setAttribute('style', 'grid-column:1 / -1');
+  body.append(plugins);
 
   const close = h('button', { class: 'btn btn--primary', type: 'button' }, 'Cerrar');
   const overlay = h(

@@ -285,6 +285,15 @@ const api: ForgeApi = {
     syncExample: () => call(IPC.VAULT_SYNC_EXAMPLE),
   },
 
+  plugins: {
+    list: () => call(IPC.PLUGIN_LIST),
+    reload: () => call(IPC.PLUGIN_RELOAD),
+    run: (commandId: string) => call(IPC.PLUGIN_RUN, commandId),
+    setEnabled: (pluginId: string, enabled: boolean) =>
+      call(IPC.PLUGIN_SET_ENABLED, pluginId, enabled),
+    createTemplate: () => call(IPC.PLUGIN_SCAFFOLD_TEMPLATE),
+  },
+
   settings: {
     get: () => call(IPC.SETTINGS_GET),
     set: (patch: Partial<ForgeSettings>) => call(IPC.SETTINGS_SET, patch),

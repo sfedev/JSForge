@@ -53,6 +53,8 @@ import type {
   LspServerState,
   MetricsSnapshot,
   OpenApiDocumentView,
+  PluginRunResult,
+  PluginState,
   ProcessInfo,
   ProjectManifest,
   PtyCreateRequest,
@@ -304,6 +306,16 @@ export interface ForgeVaultApi {
   syncExample(): Promise<Result<VaultView>>;
 }
 
+export interface ForgePluginApi {
+  list(): Promise<Result<readonly PluginState[]>>;
+  /** Relee `.forge/plugin.ts` y vuelve a publicar los comandos. */
+  reload(): Promise<Result<readonly PluginState[]>>;
+  run(commandId: string): Promise<Result<PluginRunResult>>;
+  setEnabled(pluginId: string, enabled: boolean): Promise<Result<readonly PluginState[]>>;
+  /** Crea `.forge/plugin.ts` con un manifiesto de ejemplo comentado. */
+  createTemplate(): Promise<Result<string>>;
+}
+
 export interface ForgeSettingsApi {
   get(): Promise<Result<ForgeSettings>>;
   set(patch: Partial<ForgeSettings>): Promise<Result<ForgeSettings>>;
@@ -333,6 +345,7 @@ export interface ForgeApi {
   readonly spec: ForgeSpecApi;
   readonly testing: ForgeTestingApi;
   readonly vault: ForgeVaultApi;
+  readonly plugins: ForgePluginApi;
   readonly updater: ForgeUpdaterApi;
   readonly settings: ForgeSettingsApi;
   /** Suscripcion al flujo unico de eventos main -> renderer. */

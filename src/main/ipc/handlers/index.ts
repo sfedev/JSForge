@@ -12,6 +12,7 @@ import { registerDotForgeHandlers } from './dotforge-handlers.js';
 import { registerFsHandlers } from './fs-handlers.js';
 import { registerGitHandlers } from './git-handlers.js';
 import { registerLspHandlers } from './lsp-handlers.js';
+import { registerPluginHandlers } from './plugin-handlers.js';
 import { registerSpecHandlers } from './spec-handlers.js';
 import { registerTerminalHandlers } from './terminal-handlers.js';
 import { registerTestHandlers } from './test-handlers.js';
@@ -31,4 +32,5 @@ export function registerAllHandlers(): void {
   registerSpecHandlers();
   registerTestHandlers();
   registerVaultHandlers();
+  registerPluginHandlers();
 }

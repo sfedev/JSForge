@@ -22,6 +22,7 @@ import {
   statPath,
   writeFile,
 } from '../../services/fs-service.js';
+import { runSaveHooks } from '../../services/plugins/plugin-service.js';
 import { handle } from '../registry.js';
 
 export function registerFsHandlers(): void {
@@ -33,9 +34,13 @@ export function registerFsHandlers(): void {
     ok(await readFile(relativePath)),
   );
 
-  handle<[WriteFileRequest], FileStat>(IPC.FS_WRITE_FILE, async (request) =>
-    ok(await writeFile(request)),
-  );
+  handle<[WriteFileRequest], FileStat>(IPC.FS_WRITE_FILE, async (request) => {
+    const stat = await writeFile(request);
+    // Los ganchos de guardado corren DESPUES de escribir y no propagan sus
+    // fallos: guardar debe funcionar aunque un plugin este mal configurado.
+    void runSaveHooks(stat.path);
+    return ok(stat);
+  });
 
   handle<[string, string], FileStat>(IPC.FS_CREATE_FILE, async (relativePath, content) =>
     ok(await createFile(relativePath, content ?? '')),

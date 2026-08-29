@@ -129,6 +129,11 @@ export function registerEventBridge(): () => void {
         void runCommand('testing.handleResults', event.payload);
         break;
 
+      case 'plugin/changed':
+        store.patch({ plugins: [...event.payload] });
+        void runCommand('plugins.register', event.payload);
+        break;
+
       case 'vault/changed':
         store.patch({ vault: event.payload });
         break;

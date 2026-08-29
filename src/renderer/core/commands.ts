@@ -29,6 +29,17 @@ export function defineCommands(definitions: readonly CommandDefinition[]): void 
   }
 }
 
+/**
+ * Retira un comando del registro.
+ *
+ * Lo necesitan los plugins: al desactivar uno, sus comandos deben
+ * desaparecer de la paleta. Un comando fantasma que falla al invocarse es
+ * peor que uno que no aparece.
+ */
+export function removeCommand(id: string): void {
+  commands.delete(id);
+}
+
 export function getCommand(id: string): CommandDefinition | undefined {
   return commands.get(id);
 }

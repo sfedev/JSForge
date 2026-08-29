@@ -30,6 +30,7 @@ import { disposeTestRuns } from './services/testing/test-service.js';
 import { setVaultSecretProvider } from './services/process/env-service.js';
 import { vaultEnvEntries } from './services/vault/vault-service.js';
 import { resetVaultCache } from './services/vault/secret-store.js';
+import { disposePlugins } from './services/plugins/plugin-service.js';
 import { cancelAllRequests } from './services/http/http-client.js';
 import { initializeUpdater } from './services/updater/updater-service.js';
 import { createMainWindow, getMainWindow } from './window.js';
@@ -142,6 +143,7 @@ function shutdown(): void {
     disposeTestRuns();
     setVaultSecretProvider(null);
     resetVaultCache();
+    disposePlugins();
     cancelAllRequests();
     closeWorkspace();
   } catch (cause) {

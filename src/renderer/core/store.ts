@@ -23,6 +23,7 @@ import type {
   LogRecord,
   LspServerState,
   MetricsSnapshot,
+  PluginState,
   ProcessInfo,
   ProjectManifest,
   ToolchainInfo,
@@ -130,6 +131,8 @@ export interface ForgeState {
 
   /** Vista del vault; los secretos llegan ya enmascarados. */
   vault: VaultView | null;
+  /** Plugins cargados de `.forge/`, con sus errores de manifiesto. */
+  plugins: PluginState[];
 }
 
 export type StateKey = keyof ForgeState;
@@ -185,6 +188,7 @@ function initialState(): ForgeState {
     coverageVisible: false,
 
     vault: null,
+    plugins: [],
   };
 }
 

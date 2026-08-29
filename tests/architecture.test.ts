@@ -133,6 +133,8 @@ const ELECTRON_FREE = [
   'main/services/testing/coverage.ts',
   'main/services/testing/runner-detect.ts',
   'main/services/vault/env-validate.ts',
+  'main/services/plugins/object-literal.ts',
+  'main/services/plugins/plugin-parser.ts',
 ];
 
 test('los modulos analizables no arrastran electron, ni directa ni indirectamente', () => {

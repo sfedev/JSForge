@@ -233,6 +233,13 @@ export const IPC = {
   VAULT_PROMOTE: 'forge:vault/promote',
   VAULT_SYNC_EXAMPLE: 'forge:vault/sync-example',
 
+  /* Motor de plugins */
+  PLUGIN_LIST: 'forge:plugin/list',
+  PLUGIN_RELOAD: 'forge:plugin/reload',
+  PLUGIN_RUN: 'forge:plugin/run',
+  PLUGIN_SET_ENABLED: 'forge:plugin/set-enabled',
+  PLUGIN_SCAFFOLD_TEMPLATE: 'forge:plugin/scaffold-template',
+
   /* Preferencias */
   SETTINGS_GET: 'forge:settings/get',
   SETTINGS_SET: 'forge:settings/set',
@@ -754,7 +761,7 @@ export interface LspServerNotification {
 /*  Formateo                                                                   */
 /* -------------------------------------------------------------------------- */
 
-export type FormatterId = 'prettier' | 'biome' | 'none';
+export type FormatterId = 'prettier' | 'biome' | 'plugin' | 'none';
 
 export interface FormatRequest {
   readonly path: string;
@@ -1617,6 +1624,100 @@ export interface VaultEntry {
   readonly updatedAt: number;
 }
 
+/* -------------------------------------------------------------------------- */
+/*  Motor de plugins                                                           */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Accion declarativa de un plugin.
+ *
+ * Es un verbo cerrado, no codigo: el manifiesto se LEE, nunca se ejecuta.
+ * Ampliar la union es la unica forma de anadir capacidades, y obliga a
+ * pensar en las implicaciones de cada una.
+ */
+export type PluginAction =
+  | {
+      readonly task: 'shell';
+      readonly command: string;
+      readonly args: readonly string[];
+      /** Relativo al workspace; pasa por el guardian de rutas. */
+      readonly cwd?: string;
+      readonly label?: string;
+    }
+  | {
+      /** Invoca un comando que el IDE ya tiene registrado. */
+      readonly task: 'command';
+      readonly id: string;
+      readonly args: readonly string[];
+    }
+  | {
+      readonly task: 'write';
+      readonly path: string;
+      readonly content: string;
+      readonly overwrite: boolean;
+    }
+  | {
+      readonly task: 'open';
+      readonly path: string;
+      readonly line?: number;
+    };
+
+export interface PluginCommand {
+  /** Ya viene prefijado con el id del plugin. */
+  readonly id: string;
+  readonly title: string;
+  readonly category: string;
+  readonly keybinding?: string;
+  readonly actions: readonly PluginAction[];
+}
+
+export interface PluginFormatter {
+  readonly languages: readonly string[];
+  readonly command: string;
+  readonly args: readonly string[];
+  /** true si el archivo se pasa por entrada estandar en vez de `$FILE`. */
+  readonly usesStdin: boolean;
+}
+
+export interface PluginScaffoldHook {
+  /** Id del blueprint, o `*` para todos. */
+  readonly blueprint: string;
+  readonly actions: readonly PluginAction[];
+}
+
+export interface PluginWatcher {
+  readonly include: readonly string[];
+  readonly actions: readonly PluginAction[];
+}
+
+export interface PluginDefinition {
+  readonly id: string;
+  readonly name: string;
+  readonly version: string;
+  readonly description?: string;
+  /** Ruta del manifiesto, relativa al workspace. */
+  readonly path: string;
+  readonly commands: readonly PluginCommand[];
+  readonly formatters: readonly PluginFormatter[];
+  readonly scaffold: readonly PluginScaffoldHook[];
+  readonly watchers: readonly PluginWatcher[];
+}
+
+export interface PluginState {
+  readonly definition: PluginDefinition;
+  readonly enabled: boolean;
+  /** Problemas del manifiesto; el plugin puede seguir siendo util. */
+  readonly errors: readonly string[];
+}
+
+export interface PluginRunResult {
+  readonly commandId: string;
+  /** Acciones que se completaron, en orden. */
+  readonly performed: readonly string[];
+  /** Procesos lanzados, para seguirlos en el panel de salida. */
+  readonly processIds: readonly string[];
+}
+
 export type ForgeEvent =
   | { readonly type: 'window/state'; readonly payload: WindowState }
   | { readonly type: 'workspace/changed'; readonly payload: WorkspaceInfo | null }
@@ -1663,6 +1764,10 @@ export type ForgeEvent =
   | { readonly type: 'test/finished'; readonly payload: TestRunSummary }
   | { readonly type: 'test/coverage'; readonly payload: CoverageReport }
   | { readonly type: 'vault/changed'; readonly payload: VaultView }
+  | {
+      readonly type: 'plugin/changed';
+      readonly payload: readonly PluginState[];
+    }
   | { readonly type: 'updater/state'; readonly payload: UpdaterState }
   | { readonly type: 'docker/changed'; readonly payload: readonly ContainerInfo[] }
   | {

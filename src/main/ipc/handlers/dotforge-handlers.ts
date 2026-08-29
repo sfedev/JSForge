@@ -36,6 +36,7 @@ import {
   readProjectManifest,
   readScripts,
 } from '../../services/toolchain/project-parsers.js';
+import { runScaffoldHooks } from '../../services/plugins/plugin-service.js';
 import { handle } from '../registry.js';
 
 export function registerDotForgeHandlers(): void {
@@ -55,9 +56,15 @@ export function registerDotForgeHandlers(): void {
 
   handle<[], readonly Blueprint[]>(IPC.DOTFORGE_BLUEPRINTS, () => ok(listBlueprints()));
 
-  handle<[GenerateRequest], GenerateResult>(IPC.DOTFORGE_GENERATE, async (request) =>
-    ok(await generate(request)),
-  );
+  handle<[GenerateRequest], GenerateResult>(IPC.DOTFORGE_GENERATE, async (request) => {
+    const result = await generate(request);
+    // Los ganchos corren despues de escribir, y solo si se escribio: un
+    // ensayo en seco no debe lanzar procesos.
+    if (!result.dryRun) {
+      await runScaffoldHooks(request.blueprintId);
+    }
+    return ok(result);
+  });
 
   handle<[string], readonly ProcessInfo[]>(IPC.DOTFORGE_PIPELINE_RUN, async (pipelineId) =>
     ok(await runPipeline(pipelineId)),

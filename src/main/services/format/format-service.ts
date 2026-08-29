@@ -2,10 +2,12 @@
  * Formateo de documentos.
  *
  * Prioridad:
- *  1. Biome, si el proyecto lo declara (`biome.json`) y el binario existe.
- *  2. Prettier del propio proyecto (`node_modules/prettier`), para respetar
+ *  1. El formateador que aporte un plugin para ese lenguaje, si lo hay:
+ *     el proyecto sabe mejor que el IDE como formatear lo suyo.
+ *  2. Biome, si el proyecto lo declara (`biome.json`) y el binario existe.
+ *  3. Prettier del propio proyecto (`node_modules/prettier`), para respetar
  *     su version y sus plugins.
- *  3. Prettier embebido en el IDE.
+ *  4. Prettier embebido en el IDE.
  *
  * La configuracion siempre se resuelve desde el archivo abierto, de modo que
  * un monorepo con varios `.prettierrc` formatea cada paquete con el suyo.
@@ -20,6 +22,7 @@ import type { FormatRequest, FormatResponse, FormatterId } from '../../../shared
 import { assertInsideWorkspace } from '../../security/workspace-guard.js';
 import { exists } from '../fs-service.js';
 import { requireWorkspaceRoot } from '../workspace-service.js';
+import { formatterFor } from '../plugins/plugin-service.js';
 
 const run = promisify(execFile);
 
@@ -108,6 +111,17 @@ export async function formatDocument(
   const root = requireWorkspaceRoot();
   const guarded = assertInsideWorkspace(root, request.path);
 
+  // Un plugin del proyecto tiene prioridad: si alguien declaro como
+  // formatear SQL o Terraform, el IDE no tiene nada mejor que ofrecer.
+  const pluginFormatted = await formatWithPlugin(guarded.absolute, request);
+  if (pluginFormatted !== null) {
+    return {
+      formatter: 'plugin',
+      content: pluginFormatted,
+      changed: pluginFormatted !== request.content,
+    };
+  }
+
   const wantsBiome = preferred === 'biome' || (await hasBiomeConfig());
   if (wantsBiome) {
     const formatted = await formatWithBiome(guarded.absolute, request.content);
@@ -132,6 +146,63 @@ export async function formatDocument(
   // Sin formateador disponible: se devuelve el contenido intacto en lugar de
   // fallar, para que "formatear al guardar" no impida guardar.
   return { formatter: 'none', content: request.content, changed: false };
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Formateador aportado por un plugin                                         */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Formatea con el binario que declare un plugin para ese lenguaje.
+ *
+ * El contenido se pasa por entrada estandar salvo que los argumentos
+ * incluyan `$FILE`, en cuyo caso el formateador edita el archivo en disco y
+ * hay que releerlo. Sin `shell`: el comando lo declara el manifiesto y no se
+ * interpola en ninguna cadena.
+ *
+ * Devuelve `null` ante cualquier fallo, para que el resto de la cadena de
+ * formateo siga funcionando y "formatear al guardar" no impida guardar.
+ */
+async function formatWithPlugin(
+  absolutePath: string,
+  request: FormatRequest,
+): Promise<string | null> {
+  const formatter = formatterFor(request.languageId);
+  if (formatter === null) {
+    return null;
+  }
+  const root = requireWorkspaceRoot();
+  const args = formatter.args.map((arg) => (arg === '$FILE' ? absolutePath : arg));
+
+  try {
+    if (formatter.usesStdin) {
+      const child = run(formatter.command, args, {
+        cwd: root,
+        timeout: FORMAT_TIMEOUT_MS,
+        windowsHide: true,
+        encoding: 'utf8',
+        maxBuffer: 16 * 1024 * 1024,
+      });
+      child.child.stdin?.end(request.content);
+      const { stdout } = await child;
+      const text = String(stdout);
+      // Un formateador que no escribe nada no ha formateado nada.
+      return text === '' ? null : text;
+    }
+
+    await run(formatter.command, args, {
+      cwd: root,
+      timeout: FORMAT_TIMEOUT_MS,
+      windowsHide: true,
+      encoding: 'utf8',
+    });
+    // Con `$FILE` el formateador edito el archivo: hay que releerlo.
+    const { readFile } = await import('node:fs/promises');
+    return await readFile(absolutePath, 'utf8');
+  } catch {
+    // Binario ausente, error de sintaxis o plazo agotado.
+    return null;
+  }
 }
 
 /* -------------------------------------------------------------------------- */
