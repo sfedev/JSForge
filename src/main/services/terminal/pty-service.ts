@@ -29,7 +29,7 @@ import { assertInsideWorkspace } from '../../security/workspace-guard.js';
 import { requireWorkspaceRoot } from '../workspace-service.js';
 import { readManifest } from '../dotforge/config-service.js';
 import { readScripts } from '../toolchain/project-parsers.js';
-import { detectToolchain } from '../toolchain/package-manager.js';
+import { detectToolchain, isAvailable } from '../toolchain/package-manager.js';
 import { resolveProcessEnv } from '../process/env-service.js';
 
 /* -------------------------------------------------------------------------- */
@@ -125,7 +125,13 @@ function localBinary(name: string): string | null {
 
 export async function listProfiles(): Promise<readonly PtyProfile[]> {
   const shell = defaultShell();
-  const toolchain = await detectToolchain();
+  // `isAvailable` cachea el resultado, incluido el negativo, asi que esto
+  // solo sondea una vez por ejecucion de la aplicacion.
+  const [toolchain, hasClaude, hasGemini] = await Promise.all([
+    detectToolchain(),
+    isAvailable('claude'),
+    isAvailable('gemini'),
+  ]);
 
   const profiles: PtyProfile[] = [
     {
@@ -149,19 +155,22 @@ export async function listProfiles(): Promise<readonly PtyProfile[]> {
       args: [],
       available: localBinary('dotforge') !== null,
     },
+    // Estos dos se declaraban disponibles SIN comprobarlo. La interfaz los
+    // ofrecia siempre y, si no estaban instalados, node-pty fallaba con un
+    // escueto «File not found: » que no decia que faltaba.
     {
       id: 'claude',
       label: 'Claude Code CLI',
       command: 'claude',
       args: [],
-      available: true,
+      available: hasClaude,
     },
     {
       id: 'gemini',
       label: 'Gemini CLI',
       command: 'gemini',
       args: [],
-      available: true,
+      available: hasGemini,
     },
   ];
 
@@ -200,6 +209,15 @@ export async function createSession(request: PtyCreateRequest): Promise<PtyCreat
   if (profile === undefined) {
     failure('E_NOT_AVAILABLE', 'No hay ningun perfil de terminal disponible.');
   }
+  // Se comprueba aqui tambien, no solo en la interfaz: asi el motivo real
+  // llega al usuario en vez del «File not found: » pelado de node-pty.
+  if (!profile.available) {
+    failure(
+      'E_NOT_AVAILABLE',
+      `"${profile.label}" no esta instalado.`,
+      `No se encontro "${profile.command}" en el PATH.`,
+    );
+  }
 
   const root = requireWorkspaceRoot();
   const guarded = assertInsideWorkspace(root, request.cwd ?? '');
@@ -225,7 +243,9 @@ export async function createSession(request: PtyCreateRequest): Promise<PtyCreat
       failure(
         'E_PROCESS_FAILED',
         `No se pudo iniciar "${profile.label}".`,
-        cause instanceof Error ? cause.message : String(cause),
+        // El mensaje de node-pty («File not found: ») no dice que archivo
+        // falta; se anade el comando para que el aviso sea accionable.
+        `Comando: ${profile.command}. ${cause instanceof Error ? cause.message : String(cause)}`,
       );
     }
 

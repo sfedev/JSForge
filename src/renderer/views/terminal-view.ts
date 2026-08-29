@@ -25,6 +25,11 @@ interface TerminalSession {
   readonly host: HTMLElement;
   readonly profileId: string;
   degraded: boolean;
+  /**
+   * El proceso termino. La pestana se conserva para poder leer la salida,
+   * pero ya no acepta entrada ni bloquea la creacion de otra terminal.
+   */
+  exited: boolean;
   /** Linea que el usuario lleva escrita, para las sugerencias. */
   buffer: string;
 }
@@ -80,9 +85,16 @@ export function registerTerminalView(): void {
         if (session === undefined) {
           return;
         }
+        // Marcar la sesion evita el fallo mas desconcertante de todos: sin
+        // esto la pestana seguia viva en apariencia, lo que se escribia se
+        // descartaba en silencio y el «+» de ese perfil quedaba oculto para
+        // siempre, asi que tampoco se podia abrir otra terminal.
+        session.exited = true;
         session.terminal.write(
-          `\r\n\x1b[90m— proceso terminado con codigo ${payload.exitCode} —\x1b[0m\r\n`,
+          `\r\n\x1b[90m— proceso terminado con codigo ${payload.exitCode} —\x1b[0m\r\n` +
+            '\x1b[90mAbre una terminal nueva desde la barra de pestanas.\x1b[0m\r\n',
         );
+        renderTabs();
       },
     },
   ]);
@@ -203,6 +215,7 @@ async function createSession(profileId: string): Promise<void> {
     host,
     profileId,
     degraded: false,
+    exited: false,
     buffer: '',
   };
   sessions.set(id, session);
@@ -225,6 +238,12 @@ async function createSession(profileId: string): Promise<void> {
   session.degraded = result.value.degraded;
 
   terminal.onData((data) => {
+    if (session.exited) {
+      // El proceso ya no existe. Sin este aviso el usuario teclea contra un
+      // hueco: el main descarta la escritura y no hay forma de saberlo.
+      terminal.write('\r\n\x1b[33mEsta terminal ya termino. Abre una nueva.\x1b[0m\r\n');
+      return;
+    }
     trackBuffer(session, data);
     void window.forge.terminal.write(id, data);
   });
@@ -294,10 +313,16 @@ function renderTabs(): void {
       class: 'pill-tab',
       type: 'button',
       'data-active': String(session.id === activeId),
-      title: session.degraded ? 'Modo degradado: sin TTY real' : (profile?.label ?? session.profileId),
+      title: session.exited
+        ? 'El proceso termino'
+        : session.degraded
+          ? 'Modo degradado: sin TTY real'
+          : (profile?.label ?? session.profileId),
     });
     tab.appendChild(h('span', {}, profile?.label ?? session.profileId));
-    if (session.degraded) {
+    if (session.exited) {
+      tab.appendChild(h('span', { style: 'color:var(--text-subtle)' }, '·terminada'));
+    } else if (session.degraded) {
       tab.appendChild(h('span', { style: 'color:var(--state-warning)' }, '·degradada'));
     }
     tab.addEventListener('click', () => showSession(session.id));
@@ -308,7 +333,9 @@ function renderTabs(): void {
     if (!profile.available) {
       continue;
     }
-    if ([...sessions.values()].some((session) => session.profileId === profile.id)) {
+    // Solo cuentan las sesiones VIVAS: una terminada no debe impedir abrir
+    // otra del mismo perfil.
+    if ([...sessions.values()].some((s) => s.profileId === profile.id && !s.exited)) {
       continue;
     }
     const add = h('button', { class: 'pill-tab', type: 'button', title: `Abrir ${profile.label}` });

@@ -394,6 +394,8 @@ prueba o una regla detrás.
 | `tailwindcss-language-server` no existía | Inventario de binarios instalados | Es `@tailwindcss/language-server` |
 | `@default(autoincrement())` mal parseado | Prueba del esquema Prisma | Lectura con paréntesis balanceados |
 | `npm run package` fallaba: `electron-builder` recompilaba `node-pty` con `node-gyp` | Al empaquetar por primera vez | `npmRebuild: false`; el módulo ya degrada solo y el proyecto promete builds sin `node-gyp` |
+| Una terminal cuyo shell moría quedaba muda y bloqueaba abrir otra | Reportado: «no me deja escribir nada y al abrir otra da file not found» | La sesión se marca `exited`: la pestaña lo indica, escribir avisa y el «+» del perfil vuelve |
+| Los perfiles `claude` y `gemini` se declaraban disponibles sin comprobarlo | El mismo reporte | Se sondean con `isAvailable()`; si faltan, ni se ofrecen |
 | `test.describe()` de Playwright no se detectaba | Prueba del localizador de bloques | El guardia contra `mock.test(` rechazaba todo lo cualificado; ahora se acepta si quien cualifica es un global del framework |
 | La suite entera dejó de arrancar al cablear el vault | `npm test` | Import de `electron` en un módulo que las pruebas cargan; se invirtió a inyección (ADR-008) |
 | Carga de trama CDP alterada tras el siguiente fragmento | Prueba del codec WebSocket | `subarray` comparte memoria con el buffer acumulado; ahora se copia |
